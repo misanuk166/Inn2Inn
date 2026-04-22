@@ -1,0 +1,41 @@
+# Template for adding a new region to Inn2Inn.
+# Copy this file to pipeline/regions/<slug>.yaml, fill in, then run:
+#   npm run pipeline -- --region=<slug>
+
+# Slug used as a primary key everywhere. Lowercase, no spaces.
+slug: example
+
+# Human-readable name shown in the RegionPicker.
+name: Example Region
+
+# Bounding box: [west, south, east, north] in WGS84.
+bbox: [-123.0, 37.8, -122.4, 38.4]
+
+# Geofabrik PBF URL clipped to the smallest extent that fully contains your bbox.
+# State-level extracts are usually the right granularity.
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+# Optional curated lodging entries that should be in the dataset regardless of
+# OSM coverage. Each entry is merged with OSM hits, deduped by name+proximity (50m).
+# `id` should be stable across pipeline runs — e.g. "seed/pelican-inn".
+seedLodging: []
+# Example entry:
+# - id: seed/pelican-inn
+#   name: Pelican Inn
+#   type: inn                    # one of: hotel|guest_house|hostel|chalet|alpine_hut|motel|inn|cabin|lodge
+#   lat: 37.8623
+#   lon: -122.5786
+#   city: Muir Beach
+#   state: CA
+#   address: 10 Pacific Way, Muir Beach, CA 94965
+#   priceRange: $$$
+#   description: Tudor-style inn at the entrance to Muir Beach with a classic English pub.
+#   website: https://www.pelicaninn.com
+#   photoUrl: ""
+
+# Optional: drop OSM lodging within this many meters of a major road.
+# Defaults to 200m if omitted (filters out freeway hotels).
+filterMajorRoadMeters: 200
+
+# Optional: max foot-route distance in miles to keep a route. Defaults to 10.
+maxRouteMiles: 10

@@ -1,0 +1,131 @@
+slug: marin
+name: Marin County, CA
+bbox: [-123.0, 37.8, -122.4, 38.4]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+# Hand-curated Marin properties known to be well-suited for inn-to-inn hiking
+# and not always tagged in OSM. The pipeline merges these with Overpass results
+# and dedupes by name + proximity.
+seedLodging:
+  - id: seed/pelican-inn
+    name: Pelican Inn
+    type: inn
+    lat: 37.86234
+    lon: -122.57862
+    city: Muir Beach
+    state: CA
+    address: 10 Pacific Way, Muir Beach, CA 94965
+    priceRange: $$$
+    description: Tudor-style inn at the entrance to Muir Beach with a classic English pub.
+    website: https://www.pelicaninn.com
+
+  - id: seed/steep-ravine-cabins
+    name: Steep Ravine Cabins
+    type: cabin
+    lat: 37.89886
+    lon: -122.62878
+    city: Stinson Beach
+    state: CA
+    address: Mount Tamalpais State Park, Stinson Beach, CA
+    priceRange: $
+    description: Rustic cliffside cabins on Mount Tamalpais State Park's coastal bluffs.
+    website: https://www.parks.ca.gov/?page_id=471
+
+  - id: seed/point-reyes-hostel
+    name: HI Point Reyes Hostel
+    type: hostel
+    lat: 37.97394
+    lon: -122.81256
+    city: Point Reyes Station
+    state: CA
+    address: 1390 Limantour Spit Rd, Point Reyes Station, CA 94956
+    priceRange: $
+    description: Historic ranch building turned hostel inside Point Reyes National Seashore.
+    website: https://www.hiusa.org/find-hostels/california/point-reyes-station-94956
+
+  - id: seed/mountain-home-inn
+    name: Mountain Home Inn
+    type: inn
+    lat: 37.90615
+    lon: -122.59239
+    city: Mill Valley
+    state: CA
+    address: 810 Panoramic Hwy, Mill Valley, CA 94941
+    priceRange: $$$
+    description: Mountainside inn on the slopes of Mount Tamalpais with bay views.
+    website: https://www.mtnhomeinn.com
+
+  - id: seed/olema-house
+    name: Olema House
+    type: hotel
+    lat: 38.04165
+    lon: -122.78664
+    city: Olema
+    state: CA
+    address: 10021 Hwy 1, Olema, CA 94950
+    priceRange: $$$
+    description: Boutique hotel at the entrance to Point Reyes National Seashore.
+    website: https://olemahouse.com
+
+  - id: seed/cavallo-point
+    name: Cavallo Point Lodge
+    type: lodge
+    lat: 37.83333
+    lon: -122.47611
+    city: Sausalito
+    state: CA
+    address: 601 Murray Cir, Fort Baker, Sausalito, CA 94965
+    priceRange: $$$$
+    description: Restored historic army post turned luxury lodge below the Golden Gate Bridge.
+    website: https://www.cavallopoint.com
+
+  - id: seed/west-point-inn
+    name: West Point Inn
+    type: inn
+    lat: 37.91139
+    lon: -122.61500
+    city: Mill Valley
+    state: CA
+    address: 100 Old Railroad Grade, Mill Valley, CA 94941
+    priceRange: $
+    description: Off-grid 1904 inn on Mount Tamalpais, accessible only on foot.
+    website: https://www.westpointinn.com
+
+  - id: seed/manka-inverness-lodge
+    name: Manka's Inverness Lodge
+    type: lodge
+    lat: 38.10444
+    lon: -122.86056
+    city: Inverness
+    state: CA
+    address: 30 Callendar Way, Inverness, CA 94937
+    priceRange: $$$
+    description: Hunting lodge-style retreat above Tomales Bay.
+    website: https://mankas.com
+
+  - id: seed/nicks-cove
+    name: Nick's Cove
+    type: cabin
+    lat: 38.19333
+    lon: -122.92250
+    city: Marshall
+    state: CA
+    address: 23240 Hwy 1, Marshall, CA 94940
+    priceRange: $$$
+    description: Waterfront cottages on Tomales Bay with restaurant on the pier.
+    website: https://www.nickscove.com
+
+  - id: seed/cottages-at-point-reyes
+    name: Cottages at Point Reyes Seashore
+    type: cabin
+    lat: 38.06889
+    lon: -122.80667
+    city: Point Reyes Station
+    state: CA
+    address: 13275 Hwy 1, Point Reyes Station, CA 94956
+    priceRange: $$$
+    description: Cottages with hot tubs minutes from Point Reyes National Seashore.
+    website: https://cottagesatpointreyes.com
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 10
