@@ -15,29 +15,41 @@ export interface OsrmClient {
   route(from: LngLat, to: LngLat): Promise<OsrmRouteResult | null>;
 }
 
-export function makeOsrmClient(baseUrl: string): OsrmClient {
+export function makeOsrmClient(baseUrl: string, timeoutMs = 10_000): OsrmClient {
   const base = baseUrl.replace(/\/+$/, "");
   return {
     async route(from, to) {
       const path = `${from[0]},${from[1]};${to[0]},${to[1]}`;
       const url = `${base}/route/v1/foot/${path}?overview=full&geometries=geojson`;
-      const res = await fetch(url, { headers: { "User-Agent": "Inn2Inn/0.1" } });
-      if (!res.ok) return null;
-      const json = (await res.json()) as {
-        code: string;
-        routes: Array<{
-          distance: number; // meters
-          duration: number; // seconds
-          geometry: LineString;
-        }>;
-      };
-      if (json.code !== "Ok" || !json.routes.length) return null;
-      const r = json.routes[0];
-      return {
-        distanceMi: r.distance / 1609.344,
-        durationMin: r.duration / 60,
-        geometry: r.geometry,
-      };
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, {
+          headers: { "User-Agent": "Inn2Inn/0.1" },
+          signal: ctl.signal,
+        });
+        if (!res.ok) return null;
+        const json = (await res.json()) as {
+          code: string;
+          routes: Array<{
+            distance: number;
+            duration: number;
+            geometry: LineString;
+          }>;
+        };
+        if (json.code !== "Ok" || !json.routes.length) return null;
+        const r = json.routes[0];
+        return {
+          distanceMi: r.distance / 1609.344,
+          durationMin: r.duration / 60,
+          geometry: r.geometry,
+        };
+      } catch {
+        // Timeout, DNS error, or abort — caller treats as "no route".
+        return null;
+      } finally {
+        clearTimeout(timer);
+      }
     },
   };
 }
