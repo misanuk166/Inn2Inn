@@ -15,7 +15,10 @@
 // Heavy network step (lodging/routes/scoring/pois) all hit external APIs
 // (Overpass, OSRM, open-elevation). Be patient and respect rate limits.
 
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import { resolve } from "node:path";
+loadEnv({ path: resolve(process.cwd(), ".env.local") });
+loadEnv();
 import { loadRegionConfig } from "./lib/region";
 import { upsertRegion, markRegionReady } from "./01-region";
 import { buildLodging } from "./02-build-lodging";

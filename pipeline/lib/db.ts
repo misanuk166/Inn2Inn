@@ -3,7 +3,12 @@
 // hitting the "server-only" import guard.
 
 import { Pool } from "pg";
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import { resolve } from "node:path";
+
+// Load .env.local first (Next.js convention), then fall back to .env.
+loadEnv({ path: resolve(process.cwd(), ".env.local") });
+loadEnv();
 
 let _pool: Pool | undefined;
 

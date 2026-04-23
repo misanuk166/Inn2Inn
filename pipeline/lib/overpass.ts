@@ -19,16 +19,28 @@ export interface OverpassResponse {
 }
 
 export async function overpass(query: string): Promise<OverpassResponse> {
-  const res = await fetch(ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: "data=" + encodeURIComponent(query),
-  });
-  if (!res.ok) {
+  // Overpass rejects requests without a proper User-Agent (returns 429 / 406).
+  // It also throttles aggressively — we retry once on 429/503.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+        "User-Agent": "Inn2Inn/0.1 (https://github.com/misanuk166/Inn2Inn; pipeline)",
+      },
+      body: "data=" + encodeURIComponent(query),
+    });
+    if (res.ok) return (await res.json()) as OverpassResponse;
     const txt = await res.text();
+    if ((res.status === 429 || res.status === 503 || res.status === 504) && attempt < 2) {
+      const wait = 5000 * (attempt + 1);
+      await new Promise((r) => setTimeout(r, wait));
+      continue;
+    }
     throw new Error(`overpass ${res.status}: ${txt.slice(0, 200)}`);
   }
-  return (await res.json()) as OverpassResponse;
+  throw new Error("overpass: unreachable");
 }
 
 export function bboxClause(bbox: Bbox): string {
