@@ -72,17 +72,41 @@ export async function buildLodging(cfg: RegionConfig): Promise<void> {
   const seedCandidates: Candidate[] = cfg.seedLodging.map((s) => seedToCandidate(s));
   log("lodging", `seed list adds ${seedCandidates.length} curated entries`);
 
-  // Dedupe: prefer seed entries (curated metadata); drop OSM hits within 50m of a seed by same name.
+  // Dedupe strategy:
+  //   - If an OSM hit has the same normalized name as a seed entry, treat
+  //     them as the same property. Trust OSM's coordinates (crowd-verified
+  //     and updated as properties relocate), keep the seed's sourceId
+  //     (stable across runs) and merge in the seed's curated metadata
+  //     (description, website, priceRange, photoUrl) wherever OSM is empty.
+  //   - If an OSM hit is within 100m of a seed entry, treat as the same
+  //     property even if names differ (tagging variations).
+  //   - Otherwise append as a new entry.
   const merged: Candidate[] = [...seedCandidates];
+  let mergedCount = 0;
   for (const osmC of osmCandidates) {
-    const dup = merged.some(
-      (m) =>
-        normalizeName(m.name) === normalizeName(osmC.name) &&
-        haversineMeters(m.lat, m.lon, osmC.lat, osmC.lon) < 50
-    );
-    if (!dup) merged.push(osmC);
+    const match = merged.find((m) => {
+      const nameMatch = normalizeName(m.name) === normalizeName(osmC.name);
+      if (nameMatch) return true;
+      return haversineMeters(m.lat, m.lon, osmC.lat, osmC.lon) < 100;
+    });
+    if (match) {
+      // Merge: OSM coords + seed's richer metadata wherever OSM is null/empty.
+      match.lat = osmC.lat;
+      match.lon = osmC.lon;
+      match.type = match.type || osmC.type;
+      match.city = match.city ?? osmC.city;
+      match.state = match.state ?? osmC.state;
+      match.address = match.address ?? osmC.address;
+      match.website = match.website ?? osmC.website;
+      match.description = match.description ?? osmC.description;
+      match.priceRange = match.priceRange ?? osmC.priceRange;
+      match.photoUrl = match.photoUrl ?? osmC.photoUrl;
+      mergedCount++;
+    } else {
+      merged.push(osmC);
+    }
   }
-  log("lodging", `after dedupe: ${merged.length}`);
+  log("lodging", `after dedupe: ${merged.length} (${mergedCount} OSM entries merged into seed)`);
 
   // Filter freeway hotels.
   log("lodging", "fetching major-road centerlines for filter...");

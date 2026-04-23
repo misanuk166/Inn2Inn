@@ -47,7 +47,9 @@ export function Map({
       attributionControl: { compact: true },
       // Needed so screenshots (Playwright, html-to-canvas, user screenshot
       // extensions) capture what's on screen. Tiny perf cost; worth it.
-      preserveDrawingBuffer: true,
+      // Cast: the option is passed straight to the underlying WebGL context
+      // in MapLibre, but isn't in the public MapOptions type until v6.
+      ...({ preserveDrawingBuffer: true } as Record<string, unknown>),
     });
     mapRef.current = map;
 
