@@ -5,7 +5,7 @@ import maplibregl, { Map as MlMap, MapMouseEvent } from "maplibre-gl";
 import type { Route } from "@/lib/types";
 import { SCENIC_CATEGORY_COLOR } from "@/lib/types";
 import { Map as MapComponent, setOrUpdateGeoJsonSource } from "@/components/map/Map";
-import { useExplorer, selectFilteredRoutes } from "./store";
+import { filterRoutes, useExplorer } from "./store";
 import type { Bbox } from "@/lib/types";
 
 const ROUTES_SRC = "explorer-routes";
@@ -17,11 +17,17 @@ const HOTELS_LABEL_LAYER = "explorer-hotels-label";
 export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
   const lodging = useExplorer((s) => s.lodging);
   const routes = useExplorer((s) => s.routes);
-  const filtered = useExplorer(selectFilteredRoutes);
+  const rating = useExplorer((s) => s.rating);
+  const maxDistance = useExplorer((s) => s.maxDistance);
+  const maxGain = useExplorer((s) => s.maxGain);
+  const endpointHotelId = useExplorer((s) => s.endpointHotelId);
   const setSelectedHotel = useExplorer((s) => s.setSelectedHotel);
   const mapRef = useRef<MlMap | null>(null);
 
-  const filteredIds = useMemo(() => new Set(filtered.map((r) => r.id)), [filtered]);
+  const filteredIds = useMemo(() => {
+    const filtered = filterRoutes(routes, rating, maxDistance, maxGain, endpointHotelId);
+    return new Set(filtered.map((r) => r.id));
+  }, [routes, rating, maxDistance, maxGain, endpointHotelId]);
 
   const handleReady = useCallback(
     (map: MlMap) => {

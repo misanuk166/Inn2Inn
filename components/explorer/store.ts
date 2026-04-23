@@ -78,16 +78,22 @@ export const RATING_LABELS: Record<RatingFilter, string> = {
   urban_only: "Urban / Road only",
 };
 
-// Returns the routes that pass all current filters.
-export function selectFilteredRoutes(state: ExplorerState): Route[] {
-  return state.routes
-    .filter((r) => ratingMatches(r.category, state.rating))
-    .filter((r) => r.distanceMi <= state.maxDistance)
-    .filter((r) => r.gainFt <= state.maxGain)
+// Pure filter — call from inside a useMemo, passing individual store fields.
+// (Don't pass this to useExplorer() as a selector: it returns a new array each
+// call which triggers an infinite re-render loop under React 19 strict mode.)
+export function filterRoutes(
+  routes: Route[],
+  rating: RatingFilter,
+  maxDistance: number,
+  maxGain: number,
+  endpointHotelId: string | null
+): Route[] {
+  return routes
+    .filter((r) => ratingMatches(r.category, rating))
+    .filter((r) => r.distanceMi <= maxDistance)
+    .filter((r) => r.gainFt <= maxGain)
     .filter((r) =>
-      state.endpointHotelId
-        ? r.aId === state.endpointHotelId || r.bId === state.endpointHotelId
-        : true
+      endpointHotelId ? r.aId === endpointHotelId || r.bId === endpointHotelId : true
     )
     .sort((a, b) => b.scenicScore - a.scenicScore);
 }

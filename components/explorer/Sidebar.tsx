@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import {
   RATING_LABELS,
-  selectFilteredRoutes,
+  filterRoutes,
   useExplorer,
   type RatingFilter,
 } from "./store";
@@ -35,7 +35,10 @@ export function Sidebar({ regions, regionSlug }: { regions: Region[]; regionSlug
   const setMaxGain = useExplorer((s) => s.setMaxGain);
 
   const lodgingById = useMemo(() => new Map(lodging.map((l) => [l.id, l])), [lodging]);
-  const filtered = useExplorer(selectFilteredRoutes);
+  const filtered = useMemo(
+    () => filterRoutes(routes, rating, maxDistance, maxGain, endpointHotelId),
+    [routes, rating, maxDistance, maxGain, endpointHotelId]
+  );
   const endpointHotel = endpointHotelId ? lodgingById.get(endpointHotelId) : null;
 
   return (
