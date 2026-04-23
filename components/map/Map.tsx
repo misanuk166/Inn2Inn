@@ -76,10 +76,15 @@ export function Map({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Swap the underlying style sheet without unmounting the map.
+  // Swap the style only when the user actually changes it. Skipping the
+  // initial run is critical — firing setStyle() before the first style has
+  // finished loading triggers "Style is not done loading.. Rebuilding from
+  // scratch" and the map never surfaces tiles.
+  const initialStyleKindRef = useRef(styleKind);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    if (styleKind === initialStyleKindRef.current) return;
     map.setStyle(styleUrl(styleKind) as unknown as StyleSpecification | string);
   }, [styleKind]);
 
