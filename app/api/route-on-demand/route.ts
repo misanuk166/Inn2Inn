@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DEFAULT_OSRM_URL, makeOsrmClient } from "@/lib/routing";
+import { makeFootRouter } from "@/lib/routing";
 import type { LngLat } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +19,15 @@ export async function POST(req: NextRequest) {
   if (!isLngLat(body.from) || !isLngLat(body.to)) {
     return NextResponse.json({ error: "from and to must be [lon, lat] arrays" }, { status: 400 });
   }
-  const osrm = makeOsrmClient(DEFAULT_OSRM_URL);
-  const result = await osrm.route(body.from, body.to);
+  let result;
+  try {
+    result = await makeFootRouter().route(body.from, body.to);
+  } catch (e) {
+    return NextResponse.json(
+      { error: (e as Error).message },
+      { status: 500 }
+    );
+  }
   if (!result) {
     return NextResponse.json({ error: "no route found" }, { status: 404 });
   }

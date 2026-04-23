@@ -40,9 +40,17 @@ Run a subset with `--only=lodging,routes` or `--skip=pois`.
 
 The new region appears in the app's `<RegionPicker>` automatically once `status='ready'`.
 
-## Production OSRM (vs. the public demo)
+## Foot-routing provider
 
-By default, the pipeline routes through `https://router.project-osrm.org`, which is rate-limited and not appropriate for large regions. To self-host:
+**`router.project-osrm.org` is car-only**, per the OSRM maintainers' own [README](https://github.com/Project-OSRM/osrm-backend#using-the-api-at-router-project-osrm-org). It accepts `/route/v1/foot/` URLs but silently answers with the car profile. We explicitly refuse to use it for this project.
+
+### Recommended: OpenRouteService (free, hosted)
+
+Sign up for a free key at [openrouteservice.org/dev](https://openrouteservice.org/dev/#/signup) and set `ORS_API_KEY` in `.env.local`. The pipeline uses the `foot-hiking` profile which follows trails, footways, and paths — exactly right for inn-to-inn hiking. Free tier limits: 2000 requests/day and 40 requests/minute. Marin's ~800 pairs (at k-nearest=30) fit comfortably.
+
+### Alternative: self-hosted OSRM (foot profile)
+
+If you want no external dependency:
 
 ```bash
 # Download + build a foot-profile graph for your area
@@ -57,6 +65,8 @@ export OSRM_URL=http://localhost:5000
 ```
 
 For nationwide coverage, build per-state graphs and route to whichever endpoint covers the request. The architecture is designed for this.
+
+**Important:** the OSRM pipeline above uses `-p /opt/foot.lua` for the extract step — make sure you don't substitute `/opt/car.lua`. The foot profile is what routes via `highway=path|track|footway|bridleway`; the car profile cannot reach trail-only lodgings like West Point Inn.
 
 ## External services used
 

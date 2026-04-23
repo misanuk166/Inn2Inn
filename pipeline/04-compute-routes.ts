@@ -1,13 +1,14 @@
 // Step 4: compute pre-computed foot routes between every pair of lodging in
-// this region that are within ~10 mi of each other (great-circle, then verified
-// against the actual foot-route distance from OSRM).
+// this region that are within ~maxRouteMiles of each other (great-circle,
+// then verified against the actual foot-route distance).
 //
-// For v1 we hit a hosted OSRM endpoint (default: project-osrm.org demo). For
-// production at US scale, point OSRM_URL at a self-hosted instance built from
-// the region's PBF — see pipeline/README.md.
+// Routing is done via OpenRouteService (foot-hiking profile) when ORS_API_KEY
+// is set, or a self-hosted OSRM foot endpoint when OSRM_URL is set. See
+// lib/routing.ts for provider selection; router.project-osrm.org is car-only
+// and is explicitly rejected.
 
 import type { LngLat } from "../lib/types";
-import { makeOsrmClient, DEFAULT_OSRM_URL } from "../lib/routing";
+import { makeFootRouter } from "../lib/routing";
 import { lookupElevations } from "./lib/elevation";
 import type { RegionConfig } from "./lib/region";
 import { pgPool } from "./lib/db";
@@ -43,7 +44,7 @@ export async function computeRoutes(cfg: RegionConfig): Promise<number> {
           and id <> $2
           and st_dwithin(geog, (select geog from lodging where id = $2), $3)
         order by geog <-> (select geog from lodging where id = $2)
-        limit 12`,
+        limit 30`,
       [cfg.slug, h.id, maxMeters]
     );
     for (const n of neighbors) {
@@ -53,7 +54,7 @@ export async function computeRoutes(cfg: RegionConfig): Promise<number> {
   }
   log("routes", `${candidatePairs.size} candidate pairs (k-nearest within ${cfg.maxRouteMiles} mi)`);
 
-  const osrm = makeOsrmClient(DEFAULT_OSRM_URL);
+  const router = makeFootRouter();
   const hotelById = new Map(hotels.map((h) => [h.id, h]));
   const keptIds = new Set<string>();
   let i = 0;
@@ -64,19 +65,19 @@ export async function computeRoutes(cfg: RegionConfig): Promise<number> {
     const a = hotelById.get(aId)!;
     const b = hotelById.get(bId)!;
 
-    let osrmResult;
+    let routeResult;
     try {
-      osrmResult = await osrm.route([a.lon, a.lat], [b.lon, b.lat]);
+      routeResult = await router.route([a.lon, a.lat], [b.lon, b.lat]);
     } catch (e) {
-      log("routes", `osrm error for ${aId}↔${bId}: ${(e as Error).message}`);
+      log("routes", `routing error for ${aId}↔${bId}: ${(e as Error).message}`);
       continue;
     }
-    if (!osrmResult || osrmResult.distanceMi > cfg.maxRouteMiles) {
+    if (!routeResult || routeResult.distanceMi > cfg.maxRouteMiles) {
       continue;
     }
 
     // Sample elevations along the polyline.
-    const samplePoints = sampleAlong(osrmResult.geometry.coordinates as LngLat[], SAMPLES_PER_ROUTE);
+    const samplePoints = sampleAlong(routeResult.geometry.coordinates as LngLat[], SAMPLES_PER_ROUTE);
     const elevsMeters = await lookupElevations(samplePoints);
     const elevsFt = elevsMeters.map((m) => Math.round(m * 3.28084));
     let gain = 0;
@@ -86,7 +87,7 @@ export async function computeRoutes(cfg: RegionConfig): Promise<number> {
       if (d > 0) gain += d;
       else loss += -d;
     }
-    const totalMi = osrmResult.distanceMi;
+    const totalMi = routeResult.distanceMi;
     const profile = elevsFt.map((elev, j) => ({
       distMi: (j / (elevsFt.length - 1)) * totalMi,
       elevFt: elev,
@@ -95,7 +96,7 @@ export async function computeRoutes(cfg: RegionConfig): Promise<number> {
     // Build a LineString WKT from the OSRM geometry for ST_GeogFromText.
     const lineWkt =
       "LINESTRING(" +
-      osrmResult.geometry.coordinates.map(([lon, lat]) => `${lon} ${lat}`).join(", ") +
+      routeResult.geometry.coordinates.map(([lon, lat]) => `${lon} ${lat}`).join(", ") +
       ")";
 
     const insertResult = await client.query<{ id: string }>(
@@ -117,7 +118,7 @@ export async function computeRoutes(cfg: RegionConfig): Promise<number> {
         aId,
         bId,
         totalMi.toFixed(2),
-        Math.round(osrmResult.durationMin),
+        Math.round(routeResult.durationMin),
         gain,
         loss,
         lineWkt,
