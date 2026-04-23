@@ -43,21 +43,50 @@ export function makeFootRouter(timeoutMs = 15_000): FootRouter {
 
 export function makeOrsClient(apiKey: string, timeoutMs = 15_000): FootRouter {
   const url = "https://api.openrouteservice.org/v2/directions/foot-hiking/geojson";
+  // ORS free tier: 40 requests/minute. Pace at 1 request every 1600ms to stay
+  // safely under (37.5 req/min). Shared across all calls in this process.
+  const MIN_INTERVAL_MS = 1600;
+  let nextAvailable = 0;
+
+  async function paced<T>(fn: () => Promise<T>): Promise<T> {
+    const now = Date.now();
+    const wait = Math.max(0, nextAvailable - now);
+    nextAvailable = Math.max(now, nextAvailable) + MIN_INTERVAL_MS;
+    if (wait) await new Promise((r) => setTimeout(r, wait));
+    return fn();
+  }
+
+  async function requestOnce(from: LngLat, to: LngLat): Promise<Response | null> {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/geo+json",
+        },
+        body: JSON.stringify({ coordinates: [from, to] }),
+        signal: ctl.signal,
+      });
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   return {
     async route(from, to) {
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            Authorization: apiKey,
-            "Content-Type": "application/json",
-            Accept: "application/geo+json",
-          },
-          body: JSON.stringify({ coordinates: [from, to] }),
-          signal: ctl.signal,
-        });
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await paced(() => requestOnce(from, to));
+        if (!res) return null;
+        if (res.status === 429 || res.status === 503) {
+          // Rate-limited despite pacing (shared key, maybe). Back off.
+          await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
+          continue;
+        }
         if (!res.ok) return null;
         const j = (await res.json()) as {
           features?: Array<{
@@ -73,11 +102,8 @@ export function makeOrsClient(apiKey: string, timeoutMs = 15_000): FootRouter {
           durationMin: summary.duration / 60,
           geometry: f.geometry,
         };
-      } catch {
-        return null;
-      } finally {
-        clearTimeout(timer);
       }
+      return null;
     },
   };
 }
