@@ -47,6 +47,31 @@ test.describe("Explorer map", () => {
     // tile fetches returned 200 (which they can do even when nothing renders).
     const debug = await readMapDebugState(page);
     console.log("map debug state:", debug);
+    // Our own sources — these should be populated from /api/lodging and
+    // /api/routes via the Zustand store. If they're empty the user sees
+    // a bare basemap with no pins/lines.
+    const ourSources = await page.evaluate(() => {
+      const m = (window as unknown as {
+        __inn2innMap?: {
+          querySourceFeatures: (id: string) => unknown[];
+        };
+      }).__inn2innMap;
+      if (!m) return null;
+      let hotelFeatures = -1;
+      let routeFeatures = -1;
+      try {
+        hotelFeatures = m.querySourceFeatures("explorer-hotels").length;
+      } catch {}
+      try {
+        routeFeatures = m.querySourceFeatures("explorer-routes").length;
+      } catch {}
+      return { hotelFeatures, routeFeatures };
+    });
+    console.log("explorer sources:", ourSources);
+    expect(ourSources, "__inn2innMap exposed").not.toBeNull();
+    expect(ourSources!.hotelFeatures, "hotels source has features").toBeGreaterThan(0);
+    expect(ourSources!.routeFeatures, "routes source has features").toBeGreaterThan(0);
+
     const layoutChain = await page.evaluate(() => {
       const container = (window as unknown as { __inn2innMap?: { getContainer: () => HTMLElement } })
         .__inn2innMap?.getContainer();
