@@ -20,9 +20,11 @@ export function Planner({
   }, [lodging, routes, setCatalog]);
 
   return (
-    <div className="grid h-full min-h-0 flex-1 grid-cols-[minmax(360px,440px)_1fr]">
+    <div className="flex min-h-0 flex-1 flex-row">
       <TripBuilder />
-      <PlannerMap />
+      <div className="relative min-h-0 flex-1">
+        <PlannerMap />
+      </div>
     </div>
   );
 }

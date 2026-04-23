@@ -28,8 +28,8 @@ export function RouteDetail({
   const poiKinds = Array.from(new Set(pois.map((p) => p.kind))).sort();
 
   return (
-    <div className="grid h-full min-h-0 flex-1 grid-cols-[minmax(360px,440px)_1fr]">
-      <div className="flex h-full min-h-0 flex-col overflow-y-auto border-r border-zinc-200 bg-white">
+    <div className="flex min-h-0 flex-1 flex-row">
+      <div className="flex w-[440px] min-h-0 max-w-md flex-col overflow-y-auto border-r border-zinc-200 bg-white">
         <div className="border-b border-zinc-100 p-4">
           <Link href="/explorer" className="text-xs text-emerald-700 hover:underline">
             ← Back to Explorer
@@ -122,7 +122,7 @@ export function RouteDetail({
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative min-h-0 flex-1">
         <RouteMap route={route} start={start} end={end} pois={pois} />
       </div>
     </div>

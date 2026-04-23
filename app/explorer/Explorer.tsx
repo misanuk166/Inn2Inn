@@ -25,9 +25,9 @@ export function Explorer({
   }, [lodging, routes, setData]);
 
   return (
-    <div className="grid h-full min-h-0 flex-1 grid-cols-[minmax(320px,400px)_1fr]">
+    <div className="flex min-h-0 flex-1 flex-row">
       <Sidebar regions={regions} regionSlug={region.slug} />
-      <div className="relative">
+      <div className="relative min-h-0 flex-1">
         <ExplorerMap initialBbox={region.bbox} />
         <HotelPanel />
       </div>
