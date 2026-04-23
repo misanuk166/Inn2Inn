@@ -1,0 +1,171 @@
+import { test, expect, type Page, type Request } from "@playwright/test";
+
+// "Tiles rendered" is true when:
+//  - The MapLibre canvas is mounted and has non-zero size
+//  - At least a handful of tile requests (vector .pbf tiles) returned 200
+//  - MapLibre fired the 'idle' event (all current tiles loaded + drawn)
+//  - No "Style is not done loading" warning in the console (the regression
+//    we're guarding against — map looked blank even though tiles fetched)
+
+const TILE_HOST = "tiles.openfreemap.org";
+const MIN_TILE_SUCCESSES = 3;
+
+test.describe("Explorer map", () => {
+  test("renders MapLibre tiles on /explorer", async ({ page }) => {
+    // Collect network + console signal while the page loads.
+    const tileResponses: Array<{ url: string; status: number }> = [];
+    const consoleWarnings: string[] = [];
+    const consoleErrors: string[] = [];
+
+    page.on("response", async (res) => {
+      const url = res.url();
+      if (url.includes(TILE_HOST) && (url.endsWith(".pbf") || url.endsWith(".png"))) {
+        tileResponses.push({ url, status: res.status() });
+      }
+    });
+    page.on("console", (msg) => {
+      const text = msg.text();
+      if (msg.type() === "warning") consoleWarnings.push(text);
+      if (msg.type() === "error") consoleErrors.push(text);
+    });
+
+    await page.goto("/explorer", { waitUntil: "domcontentloaded" });
+
+    // Canvas must exist and have real size.
+    const canvas = page.locator(".maplibregl-canvas").first();
+    await expect(canvas, "maplibre canvas should mount").toBeVisible({ timeout: 10_000 });
+    const box = await canvas.boundingBox();
+    expect(box, "canvas has bounding box").not.toBeNull();
+    expect(box!.width, "canvas width > 200").toBeGreaterThan(200);
+    expect(box!.height, "canvas height > 200").toBeGreaterThan(200);
+
+    // Wait for MapLibre to signal idle — all tiles in the current viewport
+    // are loaded and rendered.
+    await waitForMaplibreIdle(page, 20_000);
+
+    // Introspect the live map to prove it actually has tiles, not just that
+    // tile fetches returned 200 (which they can do even when nothing renders).
+    const debug = await readMapDebugState(page);
+    console.log("map debug state:", debug);
+    const layoutChain = await page.evaluate(() => {
+      const container = (window as unknown as { __inn2innMap?: { getContainer: () => HTMLElement } })
+        .__inn2innMap?.getContainer();
+      const out: Array<{ tag: string; cls: string; h: number; w: number }> = [];
+      let el: HTMLElement | null = container ?? null;
+      while (el) {
+        out.push({
+          tag: el.tagName.toLowerCase(),
+          cls: el.className.toString().slice(0, 80),
+          h: el.clientHeight,
+          w: el.clientWidth,
+        });
+        el = el.parentElement;
+      }
+      return out;
+    });
+    console.log("layout chain (map container → html):", layoutChain);
+    expect(debug, "map instance should be attached to window").not.toBeNull();
+    expect(debug!.canvasWidth, "canvas has non-zero width").toBeGreaterThan(0);
+    expect(debug!.canvasHeight, "canvas has non-zero height").toBeGreaterThan(0);
+    expect(
+      debug!.renderedFeaturesCount,
+      "map should have rendered features (tiles visible)"
+    ).toBeGreaterThan(0);
+
+    // Take screenshots early so we can inspect them even if later assertions fail.
+    await page.screenshot({ path: "test-results/explorer-map.png", fullPage: false });
+    await page.locator(".maplibregl-canvas").first().screenshot({
+      path: "test-results/explorer-map-canvas.png",
+    });
+
+    // At least N successful tile fetches.
+    const ok = tileResponses.filter((r) => r.status === 200);
+    const bad = tileResponses.filter((r) => r.status >= 400);
+    expect(
+      ok.length,
+      `expected >= ${MIN_TILE_SUCCESSES} successful tile responses; got ${ok.length} ok / ${bad.length} bad`
+    ).toBeGreaterThanOrEqual(MIN_TILE_SUCCESSES);
+
+    // The specific regression we just fixed.
+    const styleReload = consoleWarnings.find((w) =>
+      w.includes("Style is not done loading")
+    );
+    expect(
+      styleReload,
+      "map triggered 'Style is not done loading. Rebuilding...' — initial setStyle is racing"
+    ).toBeUndefined();
+
+    // We also take a screenshot (above) for human verification. Pixel-level
+    // drawImage sampling is unreliable across timing — rely on the canvas
+    // dimensions + MapLibre's own renderedFeaturesCount instead.
+  });
+});
+
+// --- helpers ---
+
+async function waitForMaplibreIdle(page: Page, timeoutMs: number): Promise<void> {
+  // window.__inn2innMap is set by components/map/Map.tsx in dev.
+  await page.waitForFunction(
+    () => {
+      const m = (window as unknown as { __inn2innMap?: { loaded?: () => boolean; isStyleLoaded?: () => boolean } })
+        .__inn2innMap;
+      return Boolean(m && m.loaded?.() && m.isStyleLoaded?.());
+    },
+    undefined,
+    { timeout: timeoutMs }
+  );
+}
+
+export interface MapDebugState {
+  canvasWidth: number;
+  canvasHeight: number;
+  containerWidth: number;
+  containerHeight: number;
+  zoom: number;
+  center: [number, number];
+  sources: string[];
+  layers: string[];
+  renderedFeaturesCount: number;
+  tilesInFlight: number;
+}
+
+export async function readMapDebugState(page: Page): Promise<MapDebugState | null> {
+  return page.evaluate(() => {
+    const m = (window as unknown as {
+      __inn2innMap?: {
+        getCanvas: () => HTMLCanvasElement;
+        getContainer: () => HTMLElement;
+        getZoom: () => number;
+        getCenter: () => { lng: number; lat: number };
+        getStyle: () => { sources: Record<string, unknown>; layers: Array<{ id: string }> };
+        queryRenderedFeatures: () => unknown[];
+        _sourceCaches?: Record<string, { _tiles?: Record<string, { state?: string }> }>;
+      };
+    }).__inn2innMap;
+    if (!m) return null;
+    const canvas = m.getCanvas();
+    const container = m.getContainer();
+    const style = m.getStyle();
+    const caches = m._sourceCaches ?? {};
+    let loading = 0;
+    for (const id of Object.keys(caches)) {
+      const tiles = caches[id]?._tiles ?? {};
+      for (const key of Object.keys(tiles)) {
+        if (tiles[key].state === "loading") loading++;
+      }
+    }
+    return {
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      containerWidth: container.clientWidth,
+      containerHeight: container.clientHeight,
+      zoom: m.getZoom(),
+      center: [m.getCenter().lng, m.getCenter().lat] as [number, number],
+      sources: Object.keys(style.sources),
+      layers: style.layers.map((l) => l.id),
+      renderedFeaturesCount: m.queryRenderedFeatures().length,
+      tilesInFlight: loading,
+    };
+  });
+}
+

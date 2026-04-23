@@ -45,6 +45,9 @@ export function Map({
       center: initialCenter,
       zoom: initialZoom,
       attributionControl: { compact: true },
+      // Needed so screenshots (Playwright, html-to-canvas, user screenshot
+      // extensions) capture what's on screen. Tiny perf cost; worth it.
+      preserveDrawingBuffer: true,
     });
     mapRef.current = map;
 
@@ -62,6 +65,11 @@ export function Map({
     map.addControl(new maplibregl.ScaleControl({ unit: "imperial" }), "bottom-left");
 
     onInit?.(map);
+
+    // Expose the map instance in dev for e2e tests and ad-hoc debugging.
+    if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+      (window as unknown as { __inn2innMap?: MlMap }).__inn2innMap = map;
+    }
 
     const handleStyleData = () => {
       onReady?.(map);
@@ -89,8 +97,13 @@ export function Map({
   }, [styleKind]);
 
   return (
-    <div className={`relative h-full w-full ${className ?? ""}`}>
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className={`absolute inset-0 ${className ?? ""}`}>
+      {/* Inline style beats MapLibre's .maplibregl-map rule (which forces
+          position: relative and would collapse the container to height 0). */}
+      <div
+        ref={containerRef}
+        style={{ position: "absolute", inset: 0 }}
+      />
       {showStyleSwitcher && (
         <div className="absolute top-2 left-2 z-10">
           <StyleSwitcher value={styleKind} onChange={setStyleKind} />

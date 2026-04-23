@@ -29,8 +29,8 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
-        <header className="flex items-center justify-between border-b border-zinc-200 bg-white px-4 py-2 shadow-sm">
+      <body className="flex h-full flex-col bg-zinc-50 text-zinc-900">
+        <header className="flex shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 py-2 shadow-sm">
           <Link href="/explorer" className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="inline-block h-6 w-6 rounded-md bg-emerald-600" aria-hidden />
             Inn2Inn
@@ -40,7 +40,7 @@ export default function RootLayout({
             <NavLink href="/planner">Planner</NavLink>
           </nav>
         </header>
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col">{children}</main>
       </body>
     </html>
   );
