@@ -1,6 +1,5 @@
 export function log(step: string, msg: string): void {
   const ts = new Date().toISOString().slice(11, 19);
-  // eslint-disable-next-line no-console
   console.log(`[${ts}] ${step.padEnd(18)} ${msg}`);
 }
 
