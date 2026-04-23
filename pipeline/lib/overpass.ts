@@ -78,7 +78,7 @@ export function poiQuery(bbox: Bbox): string {
   node["tourism"="viewpoint"]${b};
   node["natural"="peak"]${b};
 );
-out tags;`;
+out body;`;
 }
 
 // Bulk highway/landuse/water within bbox for scenic-scoring inputs.

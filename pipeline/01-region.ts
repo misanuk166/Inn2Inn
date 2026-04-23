@@ -23,12 +23,19 @@ export async function upsertRegion(cfg: RegionConfig): Promise<void> {
   log("region", `upserted ${cfg.slug} (status=building)`);
 }
 
-export async function markRegionReady(slug: string, routesCount: number): Promise<void> {
+export async function markRegionReady(slug: string): Promise<void> {
+  // Read the live count from the routes table — robust to running with
+  // --only= flags that skip the routes step.
+  const { rows } = await pgPool().query<{ count: string }>(
+    `select count(*)::text as count from routes where region_slug = $1`,
+    [slug]
+  );
+  const count = Number(rows[0]?.count ?? 0);
   await pgPool().query(
     `update regions
         set status = 'ready', routes_count = $2, updated_at = now()
       where slug = $1`,
-    [slug, routesCount]
+    [slug, count]
   );
-  log("region", `marked ${slug} ready (${routesCount} routes)`);
+  log("region", `marked ${slug} ready (${count} routes)`);
 }

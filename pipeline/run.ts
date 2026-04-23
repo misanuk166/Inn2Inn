@@ -66,8 +66,6 @@ async function main(): Promise<void> {
   log("pipeline", `region=${cfg.slug} (${cfg.name})`);
   log("pipeline", `bbox=${cfg.bbox.join(", ")}`);
 
-  let routesCount = 0;
-
   for (const step of ALL_STEPS) {
     if (!shouldRun(step, args)) {
       log("pipeline", `skipping ${step}`);
@@ -82,7 +80,7 @@ async function main(): Promise<void> {
         await buildLodging(cfg);
         break;
       case "routes":
-        routesCount = await computeRoutes(cfg);
+        await computeRoutes(cfg);
         break;
       case "scoring":
         await scoreRoutes(cfg);
@@ -91,7 +89,7 @@ async function main(): Promise<void> {
         await extractPois(cfg);
         break;
       case "ready":
-        await markRegionReady(cfg.slug, routesCount);
+        await markRegionReady(cfg.slug);
         break;
     }
   }
