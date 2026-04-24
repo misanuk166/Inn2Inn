@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import maplibregl, { Map as MlMap, StyleSpecification } from "maplibre-gl";
+import maplibregl, { Map as MlMap } from "maplibre-gl";
 import type { Bbox } from "@/lib/types";
-import { styleUrl, type MapStyleKind } from "./styles";
+import { styleFor, type MapStyleKind } from "./styles";
 import { StyleSwitcher } from "./StyleSwitcher";
 
 export interface MapProps {
@@ -20,7 +20,7 @@ export interface MapProps {
   className?: string;
 }
 
-const DEFAULT_KIND: MapStyleKind = "topo";
+const DEFAULT_KIND: MapStyleKind = "outdoor";
 
 export function Map({
   initialBbox,
@@ -41,7 +41,7 @@ export function Map({
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: styleUrl(DEFAULT_KIND) as unknown as StyleSpecification | string,
+      style: styleFor(DEFAULT_KIND),
       center: initialCenter,
       zoom: initialZoom,
       attributionControl: { compact: true },
@@ -95,7 +95,7 @@ export function Map({
     const map = mapRef.current;
     if (!map) return;
     if (styleKind === initialStyleKindRef.current) return;
-    map.setStyle(styleUrl(styleKind) as unknown as StyleSpecification | string);
+    map.setStyle(styleFor(styleKind));
   }, [styleKind]);
 
   return (
