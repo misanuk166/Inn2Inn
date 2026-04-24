@@ -34,8 +34,10 @@ seedLodging:
   - id: seed/point-reyes-hostel
     name: HI Point Reyes Hostel
     type: hostel
-    lat: 37.97394
-    lon: -122.81256
+    # Coords verified against OSM — the hostel is off Limantour Spit Rd,
+    # not mid-peninsula.
+    lat: 38.02396
+    lon: -122.88200
     city: Point Reyes Station
     state: CA
     address: 1390 Limantour Spit Rd, Point Reyes Station, CA 94956

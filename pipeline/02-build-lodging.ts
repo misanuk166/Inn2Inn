@@ -85,8 +85,28 @@ export async function buildLodging(cfg: RegionConfig): Promise<void> {
   let mergedCount = 0;
   for (const osmC of osmCandidates) {
     const match = merged.find((m) => {
-      const nameMatch = normalizeName(m.name) === normalizeName(osmC.name);
-      if (nameMatch) return true;
+      const mN = normalizeName(m.name);
+      const oN = normalizeName(osmC.name);
+      if (mN === oN) return true;
+
+      const mWords = significantWords(m.name);
+      const oWords = significantWords(osmC.name);
+
+      // Substring: "Nick's Cove" ↔ "Nick's Cove Cottages".
+      const contains =
+        mN.length >= 8 && oN.length >= 8 && (mN.includes(oN) || oN.includes(mN));
+      // Word-level Jaccard: catches "Cavallo Point Lodge" ↔ "Cavallo Point -
+      // the Lodge at the Golden Gate" where the normalized strings don't
+      // share a contiguous substring.
+      const jaccard = jaccardSimilarity(mWords, oWords);
+      const nameMatch = contains || jaccard >= 0.5;
+
+      if (nameMatch) {
+        // Hand-typed seed coords can be off by several km. 5km is generous
+        // but still sanity-checks against wholly-different properties.
+        return haversineMeters(m.lat, m.lon, osmC.lat, osmC.lon) < 5000;
+      }
+      // Proximity-only fallback for unrelated names at the same address.
       return haversineMeters(m.lat, m.lon, osmC.lat, osmC.lon) < 100;
     });
     if (match) {
@@ -108,7 +128,10 @@ export async function buildLodging(cfg: RegionConfig): Promise<void> {
   }
   log("lodging", `after dedupe: ${merged.length} (${mergedCount} OSM entries merged into seed)`);
 
-  // Filter freeway hotels.
+  // Filter freeway hotels (OSM-sourced only — seed entries are hand-curated
+  // and exempt, since coastal inns like Pelican Inn sit right at a Highway 1
+  // junction that OSM tags as "primary").
+  const seedIds = new Set(cfg.seedLodging.map((s) => s.id));
   log("lodging", "fetching major-road centerlines for filter...");
   const roads = await overpass(majorRoadsQuery(cfg.bbox));
   const roadSegments: Array<[LngLat, LngLat]> = [];
@@ -123,12 +146,13 @@ export async function buildLodging(cfg: RegionConfig): Promise<void> {
       ]);
     }
   }
-  const filtered = merged.filter(
-    (c) => minDistanceToSegments(c.lat, c.lon, roadSegments) >= cfg.filterMajorRoadMeters
-  );
+  const filtered = merged.filter((c) => {
+    if (seedIds.has(c.sourceId)) return true;
+    return minDistanceToSegments(c.lat, c.lon, roadSegments) >= cfg.filterMajorRoadMeters;
+  });
   log(
     "lodging",
-    `dropped ${merged.length - filtered.length} entries within ${cfg.filterMajorRoadMeters}m of a major road`
+    `dropped ${merged.length - filtered.length} OSM entries within ${cfg.filterMajorRoadMeters}m of a major road (seed entries exempt)`
   );
 
   // Elevation lookup (only where missing).
@@ -226,6 +250,31 @@ function composeAddress(tags: Record<string, string>): string | null {
 
 function normalizeName(n: string): string {
   return n.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+const STOPWORDS = new Set([
+  "the", "a", "an", "of", "at", "on", "in", "to", "by", "and", "&",
+  // Generic lodging nouns that would let "The Inn" match "The Inn of the
+  // Golden Gate" spuriously.
+  "inn", "hotel", "motel", "lodge", "hostel", "cottages", "cottage",
+  "house", "suites", "cabins", "cabin", "resort", "retreat",
+]);
+
+function significantWords(name: string): Set<string> {
+  return new Set(
+    name
+      .toLowerCase()
+      .split(/[^a-z0-9]+/g)
+      .filter((w) => w.length >= 3 && !STOPWORDS.has(w))
+  );
+}
+
+function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let intersection = 0;
+  for (const w of a) if (b.has(w)) intersection++;
+  const union = a.size + b.size - intersection;
+  return union === 0 ? 0 : intersection / union;
 }
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {

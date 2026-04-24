@@ -60,11 +60,14 @@ export function lodgingQuery(bbox: Bbox): string {
 out tags center;`;
 }
 
-// Major-road centerlines for the freeway-hotel filter.
+// Major-road centerlines for the freeway-hotel filter. Scope is intentionally
+// narrow (motorway, trunk) — "primary" would sweep up coastal highways like
+// CA-1 at Muir Beach where curated inns sit right at the junction. Trail-only
+// inns near Hwy 1 are exactly the point of the product.
 export function majorRoadsQuery(bbox: Bbox): string {
   const b = bboxClause(bbox);
   return `[out:json][timeout:60];
-way["highway"~"^(motorway|trunk|primary)$"]${b};
+way["highway"~"^(motorway|trunk)$"]${b};
 out geom;`;
 }
 
