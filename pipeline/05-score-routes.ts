@@ -25,9 +25,10 @@ import type { RegionConfig } from "./lib/region";
 import { pgPool } from "./lib/db";
 import { log, progress } from "./lib/log";
 
-const NATURAL_LANDUSE = new Set(["forest", "meadow", "grass"]);
-const NATURAL_NATURAL = new Set(["wood", "water"]);
-const NATURAL_LEISURE = new Set(["park", "nature_reserve"]);
+const NATURAL_LANDUSE = new Set(["forest", "meadow", "grass", "recreation_ground"]);
+const NATURAL_NATURAL = new Set(["wood", "water", "scrub", "heath", "grassland"]);
+const NATURAL_LEISURE = new Set(["park", "nature_reserve", "golf_course"]);
+const NATURAL_BOUNDARY = new Set(["protected_area", "national_park"]);
 const TRAIL_HIGHWAYS = new Set(["path", "track", "footway", "bridleway", "steps"]);
 const MINOR_HIGHWAYS = new Set([
   "service",
@@ -79,31 +80,76 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
   const naturalRows: string[] = []; // wkt
   const waterRows: string[] = [];   // wkt
 
-  for (const el of features.elements) {
-    if (el.type !== "way" || !el.geometry || el.geometry.length < 2 || !el.tags) continue;
-    const coords: LngLat[] = el.geometry.map((p) => [p.lon, p.lat]);
+  function isNaturalTagged(tags: Record<string, string>): boolean {
+    return (
+      (!!tags.landuse && NATURAL_LANDUSE.has(tags.landuse)) ||
+      (!!tags.natural && NATURAL_NATURAL.has(tags.natural)) ||
+      (!!tags.leisure && NATURAL_LEISURE.has(tags.leisure)) ||
+      (!!tags.boundary && NATURAL_BOUNDARY.has(tags.boundary))
+    );
+  }
+
+  function pushNaturalFromCoords(coords: LngLat[]) {
+    if (coords.length < 2) return;
     const isClosed =
       coords.length > 2 &&
       coords[0][0] === coords[coords.length - 1][0] &&
       coords[0][1] === coords[coords.length - 1][1];
+    if (isClosed) {
+      naturalRows.push(polyWkt(coords));
+    } else {
+      // Non-closed way from a relation outer. Close it with a straight seam;
+      // PostGIS will accept a slight invalidity, and for scenic scoring we
+      // care about approximate coverage, not exact boundary. If the ring is
+      // self-intersecting ST_GeogFromText will throw and we skip it.
+      const closed: LngLat[] = [...coords, coords[0]];
+      naturalRows.push(polyWkt(closed));
+    }
+  }
 
-    if (el.tags.highway) {
-      const kind = highwayKind(el.tags.highway);
-      if (!kind) continue;
-      highwayRows.push({ kind, wkt: lineWkt(coords) });
-    } else if (
-      el.tags.natural === "water" ||
-      el.tags.natural === "coastline" ||
-      el.tags.landuse === "reservoir"
-    ) {
-      waterRows.push(isClosed ? polyWkt(coords) : lineWkt(coords));
-    } else if (
-      (el.tags.landuse && NATURAL_LANDUSE.has(el.tags.landuse)) ||
-      (el.tags.natural && NATURAL_NATURAL.has(el.tags.natural)) ||
-      (el.tags.leisure && NATURAL_LEISURE.has(el.tags.leisure)) ||
-      el.tags.boundary === "protected_area"
-    ) {
-      if (isClosed) naturalRows.push(polyWkt(coords));
+  for (const el of features.elements) {
+    const tags = el.tags ?? {};
+
+    if (el.type === "way" && el.geometry && el.geometry.length >= 2) {
+      const coords: LngLat[] = el.geometry.map((p) => [p.lon, p.lat]);
+      const isClosed =
+        coords.length > 2 &&
+        coords[0][0] === coords[coords.length - 1][0] &&
+        coords[0][1] === coords[coords.length - 1][1];
+
+      if (tags.highway) {
+        const kind = highwayKind(tags.highway);
+        if (!kind) continue;
+        highwayRows.push({ kind, wkt: lineWkt(coords) });
+      } else if (
+        tags.natural === "water" ||
+        tags.natural === "coastline" ||
+        tags.landuse === "reservoir"
+      ) {
+        waterRows.push(isClosed ? polyWkt(coords) : lineWkt(coords));
+      } else if (isNaturalTagged(tags) && isClosed) {
+        naturalRows.push(polyWkt(coords));
+      }
+    } else if (el.type === "relation" && isNaturalTagged(tags)) {
+      // Multipolygon: outer ways form the park/protected-area boundary. We
+      // take each outer member way as its own polygon (closing non-closed
+      // ways with a seam). This over-approximates in the case of true
+      // multipolygons with holes, but for "is this trail in a park?" scoring
+      // that's fine.
+      const members = (el as unknown as {
+        members?: Array<{
+          type: string;
+          role?: string;
+          geometry?: Array<{ lat: number; lon: number }>;
+        }>;
+      }).members;
+      if (!members) continue;
+      for (const mem of members) {
+        if (mem.type !== "way" || !mem.geometry || mem.geometry.length < 2) continue;
+        if (mem.role && mem.role !== "outer" && mem.role !== "") continue;
+        const coords: LngLat[] = mem.geometry.map((p) => [p.lon, p.lat]);
+        pushNaturalFromCoords(coords);
+      }
     }
   }
 
@@ -198,6 +244,17 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
       f_major: number;
       f_near_water: number;
     }>(
+      // For surface: two LineStrings representing the same real-world trail
+      // rarely overlap pixel-perfectly, so a raw ST_Intersection(line, line)
+      // returns ~0. Buffer the highway by 30m (real-world "corridor" of the
+      // same physical path) and then clip the route against it — the result
+      // is the portion of the route that's within 30m of a highway of that
+      // category, which is what we actually want to measure.
+      //
+      // For naturalness: route-vs-polygon ST_Intersection is meaningful
+      // (line inside polygon returns the inside portion).
+      //
+      // For water: "within 500m of water" corridor via ST_DWithin.
       `with r as (
          select polyline, st_length(polyline) as polyline_length_m
            from routes where id = $1
@@ -208,21 +265,35 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
              from ${SCRATCH_NATURAL} n where r.polyline && n.geog
          ), 0) / nullif(r.polyline_length_m, 0) as f_in_natural,
          coalesce((
-           select sum(st_length(st_intersection(r.polyline::geometry, h.geog::geometry)::geography))
-             from ${SCRATCH_HIGHWAYS} h where r.polyline && h.geog and h.kind = 'trail'
+           select sum(st_length(st_intersection(
+             r.polyline::geometry,
+             st_buffer(h.geog, 30)::geometry
+           )::geography))
+             from ${SCRATCH_HIGHWAYS} h
+            where h.kind = 'trail' and st_dwithin(r.polyline, h.geog, 30)
          ), 0) / nullif(r.polyline_length_m, 0) as f_trail,
          coalesce((
-           select sum(st_length(st_intersection(r.polyline::geometry, h.geog::geometry)::geography))
-             from ${SCRATCH_HIGHWAYS} h where r.polyline && h.geog and h.kind = 'minor'
+           select sum(st_length(st_intersection(
+             r.polyline::geometry,
+             st_buffer(h.geog, 30)::geometry
+           )::geography))
+             from ${SCRATCH_HIGHWAYS} h
+            where h.kind = 'minor' and st_dwithin(r.polyline, h.geog, 30)
          ), 0) / nullif(r.polyline_length_m, 0) as f_minor,
          coalesce((
-           select sum(st_length(st_intersection(r.polyline::geometry, h.geog::geometry)::geography))
-             from ${SCRATCH_HIGHWAYS} h where r.polyline && h.geog and h.kind = 'major'
+           select sum(st_length(st_intersection(
+             r.polyline::geometry,
+             st_buffer(h.geog, 30)::geometry
+           )::geography))
+             from ${SCRATCH_HIGHWAYS} h
+            where h.kind = 'major' and st_dwithin(r.polyline, h.geog, 30)
          ), 0) / nullif(r.polyline_length_m, 0) as f_major,
          coalesce((
-           select sum(st_length(st_intersection(r.polyline::geometry,
-                         st_buffer(w.geog, 500)::geometry)::geography))
-             from ${SCRATCH_WATER} w where r.polyline && st_buffer(w.geog, 500)
+           select sum(st_length(st_intersection(
+             r.polyline::geometry,
+             st_buffer(w.geog, 500)::geometry
+           )::geography))
+             from ${SCRATCH_WATER} w where st_dwithin(r.polyline, w.geog, 500)
          ), 0) / nullif(r.polyline_length_m, 0) as f_near_water
        from r`,
       [r.id]

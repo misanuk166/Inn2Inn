@@ -85,15 +85,21 @@ out body;`;
 }
 
 // Bulk highway/landuse/water within bbox for scenic-scoring inputs.
+// Includes RELATIONS for natural areas (parks, protected areas) — these are
+// multipolygons in OSM and represent most major parks (Mt Tam SP, GGNRA,
+// Point Reyes NS, etc.) which aren't single ways.
 export function featureQuery(bbox: Bbox): string {
   const b = bboxClause(bbox);
-  return `[out:json][timeout:90];
+  return `[out:json][timeout:120];
 (
   way["highway"]${b};
-  way["landuse"~"^(forest|meadow|grass)$"]${b};
-  way["natural"~"^(wood|water|coastline)$"]${b};
-  way["leisure"~"^(park|nature_reserve)$"]${b};
-  way["boundary"="protected_area"]${b};
+  way["landuse"~"^(forest|meadow|grass|recreation_ground)$"]${b};
+  way["natural"~"^(wood|water|coastline|scrub|heath|grassland)$"]${b};
+  way["leisure"~"^(park|nature_reserve|golf_course)$"]${b};
+  way["boundary"~"^(protected_area|national_park)$"]${b};
+  rel["leisure"~"^(park|nature_reserve)$"]${b};
+  rel["boundary"~"^(protected_area|national_park)$"]${b};
+  rel["landuse"~"^(forest|meadow|grass|recreation_ground)$"]${b};
 );
 out geom;`;
 }
