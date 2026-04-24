@@ -89,22 +89,17 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
     );
   }
 
-  function pushNaturalFromCoords(coords: LngLat[]) {
+  // Per-relation collection of outer-way line segments. We assemble them
+  // into a single convex-hull polygon per relation later — that's a valid
+  // polygon and a reasonable approximation of "is the route inside this
+  // park?" for parks like Mt Tamalpais SP that are roughly convex.
+  const relationOuters = new Map<string, string[]>(); // relId -> array of LineString WKTs
+
+  function addOuter(relId: string, coords: LngLat[]) {
     if (coords.length < 2) return;
-    const isClosed =
-      coords.length > 2 &&
-      coords[0][0] === coords[coords.length - 1][0] &&
-      coords[0][1] === coords[coords.length - 1][1];
-    if (isClosed) {
-      naturalRows.push(polyWkt(coords));
-    } else {
-      // Non-closed way from a relation outer. Close it with a straight seam;
-      // PostGIS will accept a slight invalidity, and for scenic scoring we
-      // care about approximate coverage, not exact boundary. If the ring is
-      // self-intersecting ST_GeogFromText will throw and we skip it.
-      const closed: LngLat[] = [...coords, coords[0]];
-      naturalRows.push(polyWkt(closed));
-    }
+    const list = relationOuters.get(relId) ?? [];
+    list.push(lineWkt(coords));
+    relationOuters.set(relId, list);
   }
 
   for (const el of features.elements) {
@@ -131,11 +126,8 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
         naturalRows.push(polyWkt(coords));
       }
     } else if (el.type === "relation" && isNaturalTagged(tags)) {
-      // Multipolygon: outer ways form the park/protected-area boundary. We
-      // take each outer member way as its own polygon (closing non-closed
-      // ways with a seam). This over-approximates in the case of true
-      // multipolygons with holes, but for "is this trail in a park?" scoring
-      // that's fine.
+      // Multipolygon: outer member ways form the park boundary. Collect the
+      // line segments now, build one convex-hull polygon per relation later.
       const members = (el as unknown as {
         members?: Array<{
           type: string;
@@ -144,22 +136,58 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
         }>;
       }).members;
       if (!members) continue;
+      const relId = `rel/${el.id}`;
       for (const mem of members) {
         if (mem.type !== "way" || !mem.geometry || mem.geometry.length < 2) continue;
         if (mem.role && mem.role !== "outer" && mem.role !== "") continue;
         const coords: LngLat[] = mem.geometry.map((p) => [p.lon, p.lat]);
-        pushNaturalFromCoords(coords);
+        addOuter(relId, coords);
       }
     }
   }
 
   log("scoring", `bulk-loading ${highwayRows.length} highways...`);
   await bulkInsertHighways(highwayRows);
-  log("scoring", `bulk-loading ${naturalRows.length} natural polys...`);
+  log("scoring", `bulk-loading ${naturalRows.length} natural polys (from closed ways)...`);
   await bulkInsertGeoms(SCRATCH_NATURAL, naturalRows);
+  log("scoring", `assembling ${relationOuters.size} natural polys from relation outers...`);
+  await assembleRelationPolygons();
   log("scoring", `bulk-loading ${waterRows.length} water features...`);
   await bulkInsertGeoms(SCRATCH_WATER, waterRows);
-  log("scoring", `loaded ${highwayRows.length} highways / ${naturalRows.length} natural polys / ${waterRows.length} water features`);
+
+  // Count what landed.
+  const { rows: counts } = await client.query<{ c: string }>(
+    `select count(*)::text as c from ${SCRATCH_NATURAL}`
+  );
+  log("scoring", `loaded ${highwayRows.length} highways / ${counts[0].c} natural polys / ${waterRows.length} water features`);
+
+  async function assembleRelationPolygons(): Promise<void> {
+    // For each relation, take ST_ConvexHull(ST_Collect(...)) of all its
+    // outer way line segments. Convex hull is always a valid polygon and is
+    // a fine approximation of "is the route inside this park?" for the kinds
+    // of natural areas we care about (parks, protected areas, forests).
+    let attempted = 0;
+    let inserted = 0;
+    for (const [, lines] of relationOuters.entries()) {
+      attempted++;
+      if (lines.length === 0) continue;
+      try {
+        await client.query(
+          `insert into ${SCRATCH_NATURAL} (geog)
+           select st_convexhull(st_collect(g))::geography
+             from (
+               select st_geogfromtext(unnest($1::text[]))::geometry as g
+             ) s
+           having st_geometrytype(st_convexhull(st_collect(g))) = 'ST_Polygon'`,
+          [lines]
+        );
+        inserted++;
+      } catch {
+        // Skip this relation if its lines can't form a polygon.
+      }
+    }
+    log("scoring", `relation polygons: ${inserted}/${attempted} assembled`);
+  }
 
   // Single-array-parameter bulk insert via UNNEST. The whole batch travels as
   // one or two text[] parameters (no per-row placeholders), so the pooler sees
@@ -234,16 +262,26 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
   log("scoring", `scoring ${routes.length} routes...`);
 
   let i = 0;
+  let failed = 0;
   for (const r of routes) {
     i++;
-    const { rows: fr } = await client.query<{
+    let fr: Array<{
       polyline_length_m: number;
       f_in_natural: number;
       f_trail: number;
       f_minor: number;
       f_major: number;
       f_near_water: number;
-    }>(
+    }> = [];
+    try {
+      const res = await client.query<{
+        polyline_length_m: number;
+        f_in_natural: number;
+        f_trail: number;
+        f_minor: number;
+        f_major: number;
+        f_near_water: number;
+      }>(
       // For surface: two LineStrings representing the same real-world trail
       // rarely overlap pixel-perfectly, so a raw ST_Intersection(line, line)
       // returns ~0. Buffer the highway by 30m (real-world "corridor" of the
@@ -261,7 +299,10 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
        )
        select r.polyline_length_m,
          coalesce((
-           select sum(st_length(st_intersection(r.polyline::geometry, n.geog::geometry)::geography))
+           select sum(st_length(st_intersection(
+             r.polyline::geometry,
+             st_makevalid(n.geog::geometry)
+           )::geography))
              from ${SCRATCH_NATURAL} n where r.polyline && n.geog
          ), 0) / nullif(r.polyline_length_m, 0) as f_in_natural,
          coalesce((
@@ -296,8 +337,13 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
              from ${SCRATCH_WATER} w where st_dwithin(r.polyline, w.geog, 500)
          ), 0) / nullif(r.polyline_length_m, 0) as f_near_water
        from r`,
-      [r.id]
-    );
+        [r.id]
+      );
+      fr = res.rows;
+    } catch (e) {
+      failed++;
+      log("scoring", `route ${r.id} failed: ${(e as Error).message.slice(0, 100)}`);
+    }
     const f = fr[0] ?? {
       polyline_length_m: 0,
       f_in_natural: 0,
@@ -335,7 +381,7 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
   await client.query(`drop table ${SCRATCH_HIGHWAYS}`);
   await client.query(`drop table ${SCRATCH_NATURAL}`);
   await client.query(`drop table ${SCRATCH_WATER}`);
-  log("scoring", "done");
+  log("scoring", `done (${failed} route(s) failed spatial join — scored as 0)`);
 }
 
 function highwayKind(tag: string): "trail" | "minor" | "major" | null {
