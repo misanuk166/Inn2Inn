@@ -11,7 +11,7 @@ export type RatingFilter =
   | "urban_only";
 
 export interface ExplorerState {
-  // Data
+  // Data — current viewport's contents.
   lodging: Lodging[];
   routes: Route[];
   // Filters
@@ -20,8 +20,10 @@ export interface ExplorerState {
   rating: RatingFilter;
   maxDistance: number;        // miles
   maxGain: number;            // feet
-  // UI
-  selectedHotelId: string | null;
+  // UI — selected hotel is held as full Lodging so the right-hand panel
+  // survives viewport changes (a hotel selected and then panned away from
+  // would otherwise vanish from the lodging array and the panel would close).
+  selectedHotel: Lodging | null;
 
   setData: (lodging: Lodging[], routes: Route[]) => void;
   setEndpointHotel: (id: string | null) => void;
@@ -29,7 +31,7 @@ export interface ExplorerState {
   setRating: (r: RatingFilter) => void;
   setMaxDistance: (n: number) => void;
   setMaxGain: (n: number) => void;
-  setSelectedHotel: (id: string | null) => void;
+  setSelectedHotel: (hotel: Lodging | null) => void;
 }
 
 const DEFAULT_MAX_DISTANCE = 12;
@@ -43,7 +45,7 @@ export const useExplorer = create<ExplorerState>((set) => ({
   rating: "all",
   maxDistance: DEFAULT_MAX_DISTANCE,
   maxGain: DEFAULT_MAX_GAIN,
-  selectedHotelId: null,
+  selectedHotel: null,
 
   setData: (lodging, routes) => set({ lodging, routes }),
   setEndpointHotel: (id) => set({ endpointHotelId: id }),
@@ -52,7 +54,7 @@ export const useExplorer = create<ExplorerState>((set) => ({
   setRating: (r) => set({ rating: r }),
   setMaxDistance: (n) => set({ maxDistance: n }),
   setMaxGain: (n) => set({ maxGain: n }),
-  setSelectedHotel: (id) => set({ selectedHotelId: id }),
+  setSelectedHotel: (hotel) => set({ selectedHotel: hotel }),
 }));
 
 export function ratingMatches(cat: ScenicCategory, filter: RatingFilter): boolean {

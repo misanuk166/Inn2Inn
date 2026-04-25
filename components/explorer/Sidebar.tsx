@@ -148,9 +148,13 @@ export function Sidebar({
       </div>
 
       <div className="flex items-center justify-between px-4 py-2 text-xs text-zinc-500">
-        <span>
-          {filtered.length} {filtered.length === 1 ? "route" : "routes"} of {routes.length}
-        </span>
+        {routes.length === 0 && lodging.length === 0 ? (
+          <span className="text-zinc-400">Loading viewport…</span>
+        ) : (
+          <span>
+            {filtered.length} {filtered.length === 1 ? "route" : "routes"} of {routes.length}
+          </span>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">

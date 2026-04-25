@@ -1,13 +1,13 @@
 "use client";
 
 import { create } from "zustand";
-import type { ItineraryLeg, Lodging, Route } from "@/lib/types";
+import type { ItineraryLeg, Lodging } from "@/lib/types";
 import { isHotelEndpoint } from "@/lib/types";
 
 export interface PlannerState {
-  // Catalog
-  lodging: Lodging[];
-  precomputedRoutes: Route[];
+  // Hotel info cache — keyed by id, populated lazily by the combobox and
+  // when an itinerary is loaded. Avoids preloading a global catalog.
+  hotelById: Record<string, Lodging>;
 
   // Trip
   itineraryId: string | null;
@@ -18,7 +18,7 @@ export interface PlannerState {
   pickingLegIndex: number | null;
 
   // Actions
-  setCatalog: (lodging: Lodging[], routes: Route[]) => void;
+  cacheHotels: (hotels: Lodging[]) => void;
   loadItinerary: (id: string | null, name: string, legs: ItineraryLeg[]) => void;
   newItinerary: () => void;
   setName: (n: string) => void;
@@ -34,14 +34,18 @@ export interface PlannerState {
 }
 
 export const usePlanner = create<PlannerState>((set) => ({
-  lodging: [],
-  precomputedRoutes: [],
+  hotelById: {},
   itineraryId: null,
   name: "Untitled trip",
   legs: [],
   pickingLegIndex: null,
 
-  setCatalog: (lodging, precomputedRoutes) => set({ lodging, precomputedRoutes }),
+  cacheHotels: (hotels) =>
+    set((s) => {
+      const next = { ...s.hotelById };
+      for (const h of hotels) next[h.id] = h;
+      return { hotelById: next };
+    }),
 
   loadItinerary: (id, name, legs) =>
     set({ itineraryId: id, name, legs, pickingLegIndex: null }),
@@ -61,7 +65,7 @@ export const usePlanner = create<PlannerState>((set) => ({
       const prev = s.legs[s.legs.length - 1];
       const from: ItineraryLeg["from"] = prev
         ? { kind: "hotel", id: prev.to.id }
-        : { kind: "hotel", id: s.lodging[0]?.id ?? "" };
+        : { kind: "hotel", id: "" };
       const to: ItineraryLeg["to"] = { kind: "hotel", id: "" };
       return { legs: [...s.legs, { from, to }] };
     }),
@@ -134,20 +138,6 @@ function rewireMirroredStarts(legs: ItineraryLeg[]): ItineraryLeg[] {
     }
   }
   return out;
-}
-
-// Find a precomputed route between two hotels (either ordering).
-export function findPrecomputedRoute(
-  routes: Route[],
-  aId: string,
-  bId: string
-): Route | null {
-  return (
-    routes.find(
-      (r) =>
-        (r.aId === aId && r.bId === bId) || (r.aId === bId && r.bId === aId)
-    ) ?? null
-  );
 }
 
 // Compute trip totals.

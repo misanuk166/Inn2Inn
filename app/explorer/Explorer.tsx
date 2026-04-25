@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { Lodging, Region, Route } from "@/lib/types";
+import type { Region } from "@/lib/types";
 import { useExplorer } from "@/components/explorer/store";
 import { Sidebar } from "@/components/explorer/Sidebar";
 import { ExplorerMap } from "@/components/explorer/ExplorerMap";
@@ -22,29 +22,30 @@ function clamp(n: number) {
 export function Explorer({
   region,
   regions,
-  lodging,
-  routes,
 }: {
   region: Region;
   regions: Region[];
-  lodging: Lodging[];
-  routes: Route[];
 }) {
-  const setData = useExplorer((s) => s.setData);
-  const selectedHotelId = useExplorer((s) => s.selectedHotelId);
+  // Lodging + routes now stream in via useViewportData (mounted inside
+  // ExplorerMap). The page no longer SSRs the bulk catalog — it would melt
+  // at non-Marin scale (10K+ routes per region).
+  const selectedHotel = useExplorer((s) => s.selectedHotel);
 
   const [leftWidth, setLeftWidth] = useState(LEFT_DEFAULT);
   const [rightWidth, setRightWidth] = useState(RIGHT_DEFAULT);
 
-  // Hydrate widths from localStorage on mount.
+  // Hydrate widths from localStorage after mount. Setting state inside the
+  // effect is intentional here — using localStorage in lazy useState init
+  // would cause an SSR/client hydration mismatch.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const l = Number(localStorage.getItem(LEFT_KEY));
     if (Number.isFinite(l) && l > 0) setLeftWidth(clamp(l));
     const r = Number(localStorage.getItem(RIGHT_KEY));
     if (Number.isFinite(r) && r > 0) setRightWidth(clamp(r));
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  // Persist widths.
   useEffect(() => {
     localStorage.setItem(LEFT_KEY, String(leftWidth));
   }, [leftWidth]);
@@ -52,9 +53,12 @@ export function Explorer({
     localStorage.setItem(RIGHT_KEY, String(rightWidth));
   }, [rightWidth]);
 
+  // Reset store when region changes so we don't show stale pins from the
+  // previous region while the new viewport's data loads.
+  const setData = useExplorer((s) => s.setData);
   useEffect(() => {
-    setData(lodging, routes);
-  }, [lodging, routes, setData]);
+    setData([], []);
+  }, [region.slug, setData]);
 
   const onLeftDelta = useCallback(
     (dx: number) => setLeftWidth((w) => clamp(w + dx)),
@@ -70,9 +74,9 @@ export function Explorer({
       <Sidebar regions={regions} regionSlug={region.slug} widthPx={leftWidth} />
       <ResizeHandle onDelta={onLeftDelta} label="Resize filters sidebar" />
       <div className="relative min-h-0 flex-1">
-        <ExplorerMap initialBbox={region.bbox} />
+        <ExplorerMap initialBbox={region.bbox} regionSlug={region.slug} />
       </div>
-      {selectedHotelId && (
+      {selectedHotel && (
         <>
           <ResizeHandle onDelta={onRightDelta} label="Resize hotel panel" />
           <HotelPanel widthPx={rightWidth} />

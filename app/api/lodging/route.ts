@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLodgingByBbox, getLodgingByRegion } from "@/lib/db";
+import {
+  getLodgingByBbox,
+  getLodgingByIds,
+  getLodgingByRegion,
+} from "@/lib/db";
 import type { Bbox } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +12,12 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const region = searchParams.get("region");
   const bboxParam = searchParams.get("bbox");
+  const idsParam = searchParams.get("ids");
 
+  if (idsParam) {
+    const ids = idsParam.split(",").map((s) => s.trim()).filter(Boolean);
+    return NextResponse.json({ lodging: await getLodgingByIds(ids) });
+  }
   if (region) {
     return NextResponse.json({ lodging: await getLodgingByRegion(region) });
   }
@@ -17,7 +26,7 @@ export async function GET(req: NextRequest) {
     if (!bbox) return NextResponse.json({ error: "invalid bbox" }, { status: 400 });
     return NextResponse.json({ lodging: await getLodgingByBbox(bbox) });
   }
-  return NextResponse.json({ error: "region or bbox required" }, { status: 400 });
+  return NextResponse.json({ error: "region, bbox, or ids required" }, { status: 400 });
 }
 
 function parseBbox(s: string): Bbox | null {

@@ -129,6 +129,15 @@ export async function getLodgingById(id: string): Promise<Lodging | null> {
   return rows[0] ? lodgingFromRow(rows[0]) : null;
 }
 
+export async function getLodgingByIds(ids: string[]): Promise<Lodging[]> {
+  if (ids.length === 0) return [];
+  const { rows } = await pool().query<LodgingRow>(
+    `select ${LODGING_COLS} from lodging where id = any($1::uuid[])`,
+    [ids]
+  );
+  return rows.map(lodgingFromRow);
+}
+
 interface RouteRow {
   id: string;
   region_slug: string;
@@ -175,14 +184,14 @@ export async function getRoutesByRegion(regionSlug: string): Promise<Route[]> {
   return rows.map(routeFromRow);
 }
 
-export async function getRoutesByBbox(bbox: Bbox): Promise<Route[]> {
+export async function getRoutesByBbox(bbox: Bbox, limit = 2000): Promise<Route[]> {
   const [w, s, e, n] = bbox;
   const { rows } = await pool().query<RouteRow>(
     `select ${ROUTE_COLS} from routes
       where polyline && st_makeenvelope($1, $2, $3, $4, 4326)::geography
       order by scenic_score desc
-      limit 2000`,
-    [w, s, e, n]
+      limit $5`,
+    [w, s, e, n, limit]
   );
   return rows.map(routeFromRow);
 }
@@ -193,6 +202,39 @@ export async function getRouteById(id: string): Promise<Route | null> {
     [id]
   );
   return rows[0] ? routeFromRow(rows[0]) : null;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function getRoutePair(aId: string, bId: string): Promise<Route | null> {
+  // Caller may pass arbitrary strings; reject anything that isn't a UUID
+  // so PG doesn't throw on cast.
+  if (!UUID_RE.test(aId) || !UUID_RE.test(bId)) return null;
+  // Routes are stored with the canonical ordering a_id < b_id.
+  const [lo, hi] = aId < bId ? [aId, bId] : [bId, aId];
+  const { rows } = await pool().query<RouteRow>(
+    `select ${ROUTE_COLS} from routes where a_id = $1 and b_id = $2 limit 1`,
+    [lo, hi]
+  );
+  return rows[0] ? routeFromRow(rows[0]) : null;
+}
+
+export async function searchLodging(
+  q: string,
+  limit = 12
+): Promise<Lodging[]> {
+  // Simple ILIKE name search. At Marin scale (~100 rows) this is instant.
+  // At CA scale (~2K rows) still <50ms with the existing indexes; if it grows,
+  // promote to a tsvector index.
+  const pattern = `%${q.replace(/[%_\\]/g, "\\$&")}%`;
+  const { rows } = await pool().query<LodgingRow>(
+    `select ${LODGING_COLS} from lodging
+      where name ilike $1
+      order by case when name ilike $2 then 0 else 1 end, name
+      limit $3`,
+    [pattern, `${q}%`, limit]
+  );
+  return rows.map(lodgingFromRow);
 }
 
 export async function getRoutesForHotel(hotelId: string, limit = 3): Promise<Route[]> {

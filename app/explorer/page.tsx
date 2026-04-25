@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getLodgingByRegion, getRoutesByRegion, listRegions } from "@/lib/db";
+import { listRegions } from "@/lib/db";
 import { DEFAULT_REGION_SLUG, readyRegions } from "@/lib/regions";
 import { Explorer } from "./Explorer";
 import { EmptyState } from "./EmptyState";
@@ -29,10 +29,9 @@ export default async function ExplorerPage({
     redirect(`/explorer?region=${fallback.slug}`);
   }
 
-  const [lodging, routes] = await Promise.all([
-    getLodgingByRegion(region.slug),
-    getRoutesByRegion(region.slug),
-  ]);
-
-  return <Explorer region={region} regions={ready} lodging={lodging} routes={routes} />;
+  // Lodging + routes are NOT fetched here. The client-side `useViewportData`
+  // hook in ExplorerMap pulls them by bbox after the map mounts. At Marin
+  // scale (890 routes) the difference is invisible; at CA scale (10K+) it's
+  // the difference between a usable page and an OOM.
+  return <Explorer region={region} regions={ready} />;
 }

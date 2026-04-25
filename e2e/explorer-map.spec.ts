@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Request } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 // "Tiles rendered" is true when:
 //  - The MapLibre canvas is mounted and has non-zero size
@@ -141,27 +141,34 @@ test.describe("Explorer map", () => {
     const baselineFiltered = Number(baselineText?.match(/^(\d+)/)?.[1] ?? 0);
     expect(baselineFiltered, "expected route count visible in sidebar").toBeGreaterThan(0);
 
-    // Pick the first hotel and click its on-canvas pixel.
+    // Pick a currently-rendered hotel marker (not just any feature in the
+    // source — the source may include clustered/off-screen features whose
+    // projected coords land outside the canvas).
     const clicked = await page.evaluate(() => {
       const m = (window as unknown as {
         __inn2innMap?: {
-          querySourceFeatures: (id: string) => Array<{
+          queryRenderedFeatures: (
+            opts: { layers: string[] } | undefined
+          ) => Array<{
             geometry: { coordinates: [number, number] };
-            properties: { id: string; name: string };
+            properties: { id: string };
           }>;
           project: (lngLat: { lng: number; lat: number }) => { x: number; y: number };
           getCanvas: () => HTMLCanvasElement;
         };
       }).__inn2innMap;
       if (!m) return null;
-      const f = m.querySourceFeatures("explorer-hotels")[0];
+      const features = m.queryRenderedFeatures({
+        layers: ["explorer-hotels-layer"],
+      });
+      const f = features[0];
       if (!f) return null;
       const [lng, lat] = f.geometry.coordinates;
       const p = m.project({ lng, lat });
       const c = m.getCanvas().getBoundingClientRect();
-      return { px: c.left + p.x, py: c.top + p.y };
+      return { px: c.left + p.x, py: c.top + p.y, id: f.properties.id };
     });
-    expect(clicked, "no hotels in source").not.toBeNull();
+    expect(clicked, "no rendered hotel marker found").not.toBeNull();
     await page.mouse.click(clicked!.px, clicked!.py);
     await page.waitForTimeout(400);
 
@@ -223,12 +230,27 @@ test.describe("Explorer map", () => {
 // --- helpers ---
 
 async function waitForMaplibreIdle(page: Page, timeoutMs: number): Promise<void> {
-  // window.__inn2innMap is set by components/map/Map.tsx in dev.
+  // window.__inn2innMap is set by components/map/Map.tsx in dev. We wait for
+  // both style load AND for the viewport hook's first fetch to populate the
+  // hotels source — without that, tests see an empty map even though the
+  // map itself is "ready."
   await page.waitForFunction(
     () => {
-      const m = (window as unknown as { __inn2innMap?: { loaded?: () => boolean; isStyleLoaded?: () => boolean } })
-        .__inn2innMap;
-      return Boolean(m && m.loaded?.() && m.isStyleLoaded?.());
+      const m = (
+        window as unknown as {
+          __inn2innMap?: {
+            loaded?: () => boolean;
+            isStyleLoaded?: () => boolean;
+            querySourceFeatures?: (id: string) => unknown[];
+          };
+        }
+      ).__inn2innMap;
+      if (!m || !m.loaded?.() || !m.isStyleLoaded?.()) return false;
+      try {
+        return (m.querySourceFeatures?.("explorer-hotels") ?? []).length > 0;
+      } catch {
+        return false;
+      }
     },
     undefined,
     { timeout: timeoutMs }

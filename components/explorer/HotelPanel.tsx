@@ -7,12 +7,10 @@ import { SCENIC_CATEGORY_COLOR, SCENIC_CATEGORY_LABEL } from "@/lib/types";
 import { useExplorer } from "./store";
 
 export function HotelPanel({ widthPx }: { widthPx: number }) {
-  const selectedId = useExplorer((s) => s.selectedHotelId);
+  const hotel = useExplorer((s) => s.selectedHotel);
   const setSelected = useExplorer((s) => s.setSelectedHotel);
   const setEndpointHotel = useExplorer((s) => s.setEndpointHotel);
-  const lodging = useExplorer((s) => s.lodging);
-
-  const hotel = lodging.find((l) => l.id === selectedId) ?? null;
+  const selectedId = hotel?.id ?? null;
   const [topRoutesFor, setTopRoutesFor] = useState<{ id: string; routes: Route[] } | null>(null);
 
   useEffect(() => {

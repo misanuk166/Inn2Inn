@@ -1,9 +1,8 @@
 // Resolves stats + geometry for a single planner leg, choosing between a
-// precomputed route or an on-demand OSRM call.
+// precomputed route (fetched by pair from the DB) or an on-demand OSRM call.
 
 import type { ItineraryLeg, Lodging, LngLat, Route } from "@/lib/types";
 import { isHotelEndpoint } from "@/lib/types";
-import { findPrecomputedRoute } from "./store";
 
 export interface ResolvedLeg {
   geometry: GeoJSON.LineString;
@@ -17,14 +16,12 @@ export interface ResolvedLeg {
 
 export async function resolveLeg(
   leg: ItineraryLeg,
-  lodgingById: Map<string, Lodging>,
-  precomputedRoutes: Route[]
+  hotelById: Record<string, Lodging>
 ): Promise<ResolvedLeg | null> {
-  // Both endpoints are hotels with a precomputed route.
-  if (isHotelEndpoint(leg.from) && isHotelEndpoint(leg.to)) {
-    const r = findPrecomputedRoute(precomputedRoutes, leg.from.id, leg.to.id);
+  // Both endpoints are hotels — try the precomputed catalog first.
+  if (isHotelEndpoint(leg.from) && isHotelEndpoint(leg.to) && leg.from.id && leg.to.id) {
+    const r = await fetchPrecomputedRoute(leg.from.id, leg.to.id);
     if (r) {
-      // If the stored route is in opposite direction, gain/loss are swapped.
       const reversed = r.aId === leg.to.id;
       return {
         geometry: reversed ? reverseLine(r.polyline) : r.polyline,
@@ -39,8 +36,8 @@ export async function resolveLeg(
   }
 
   // Otherwise, fall back to on-demand OSRM.
-  const from = endpointToLngLat(leg.from, lodgingById);
-  const to = endpointToLngLat(leg.to, lodgingById);
+  const from = endpointToLngLat(leg.from, hotelById);
+  const to = endpointToLngLat(leg.to, hotelById);
   if (!from || !to) return null;
 
   const res = await fetch("/api/route-on-demand", {
@@ -58,19 +55,29 @@ export async function resolveLeg(
     geometry: j.geometry,
     distanceMi: j.distanceMi,
     durationMin: j.durationMin,
-    // OSRM doesn't return elevation; leave 0 for on-demand legs.
     gainFt: 0,
     lossFt: 0,
     source: "on-demand",
   };
 }
 
+async function fetchPrecomputedRoute(aId: string, bId: string): Promise<Route | null> {
+  try {
+    const res = await fetch(`/api/routes/pair?a=${aId}&b=${bId}`);
+    if (!res.ok) return null;
+    const j = (await res.json()) as { route: Route | null };
+    return j.route;
+  } catch {
+    return null;
+  }
+}
+
 function endpointToLngLat(
   ep: ItineraryLeg["from"] | ItineraryLeg["to"],
-  lodgingById: Map<string, Lodging>
+  hotelById: Record<string, Lodging>
 ): LngLat | null {
   if (isHotelEndpoint(ep)) {
-    const h = lodgingById.get(ep.id);
+    const h = hotelById[ep.id];
     if (!h) return null;
     return [h.lon, h.lat];
   }

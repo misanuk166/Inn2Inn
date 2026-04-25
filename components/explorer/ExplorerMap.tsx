@@ -7,16 +7,29 @@ import type { Route } from "@/lib/types";
 import { SCENIC_CATEGORY_COLOR, SCENIC_CATEGORY_LABEL } from "@/lib/types";
 import { Map as MapComponent, setOrUpdateGeoJsonSource } from "@/components/map/Map";
 import { filterRoutes, useExplorer } from "./store";
+import { useViewportData } from "./useViewportData";
 import type { Bbox } from "@/lib/types";
 
 const ROUTES_SRC = "explorer-routes";
 const ROUTES_LAYER = "explorer-routes-layer";
-const ROUTES_HIT_LAYER = "explorer-routes-hit"; // wide invisible click target
+const ROUTES_HIT_LAYER = "explorer-routes-hit";
 const HOTELS_SRC = "explorer-hotels";
 const HOTELS_LAYER = "explorer-hotels-layer";
 const HOTELS_LABEL_LAYER = "explorer-hotels-label";
+const HOTELS_CLUSTER_LAYER = "explorer-hotels-clusters";
+const HOTELS_CLUSTER_COUNT_LAYER = "explorer-hotels-cluster-count";
+// Below this zoom we skip route polyline rendering — at statewide views
+// thousands of overlapping lines are noise. Hotel clusters still tell the
+// story of "where the routes are."
+const ROUTES_MIN_ZOOM = 9;
 
-export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
+export function ExplorerMap({
+  initialBbox,
+  regionSlug,
+}: {
+  initialBbox?: Bbox;
+  regionSlug: string;
+}) {
   const router = useRouter();
   const lodging = useExplorer((s) => s.lodging);
   const routes = useExplorer((s) => s.routes);
@@ -28,7 +41,13 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
   const setEndpointHotel = useExplorer((s) => s.setEndpointHotel);
 
   const mapRef = useRef<MlMap | null>(null);
+  const [mapInstance, setMapInstance] = useState<MlMap | null>(null);
   const [styleReady, setStyleReady] = useState(0);
+
+  // Viewport-driven data: fetches /api/lodging?bbox= and /api/routes?bbox=
+  // on every settled pan/zoom, with a quantized-bbox LRU cache. The store's
+  // lodging/routes are the current viewport; Sidebar reads from there.
+  useViewportData(mapInstance, regionSlug);
 
   const filteredIds = useMemo(() => {
     const filtered = filterRoutes(routes, rating, maxDistance, maxGain, endpointHotelId);
@@ -52,6 +71,7 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
   const handleReady = useCallback(
     (map: MlMap) => {
       mapRef.current = map;
+      setMapInstance(map);
       setStyleReady((n) => n + 1);
 
       const popup = new maplibregl.Popup({
@@ -61,13 +81,19 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
         className: "explorer-route-popup",
       });
 
-      // Hotels.
+      // Hotels — individual + cluster.
       map.off("click", HOTELS_LAYER, onHotelClick);
       map.on("click", HOTELS_LAYER, onHotelClick);
       map.off("mouseenter", HOTELS_LAYER, onHotelEnter);
       map.on("mouseenter", HOTELS_LAYER, onHotelEnter);
       map.off("mouseleave", HOTELS_LAYER, onHotelLeave);
       map.on("mouseleave", HOTELS_LAYER, onHotelLeave);
+      map.off("click", HOTELS_CLUSTER_LAYER, onClusterClick);
+      map.on("click", HOTELS_CLUSTER_LAYER, onClusterClick);
+      map.off("mouseenter", HOTELS_CLUSTER_LAYER, onHotelEnter);
+      map.on("mouseenter", HOTELS_CLUSTER_LAYER, onHotelEnter);
+      map.off("mouseleave", HOTELS_CLUSTER_LAYER, onHotelLeave);
+      map.on("mouseleave", HOTELS_CLUSTER_LAYER, onHotelLeave);
 
       // Routes — wide hit layer so the user doesn't have to thread a 4px line.
       map.off("click", ROUTES_HIT_LAYER, onRouteClick);
@@ -84,14 +110,31 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
       function onHotelClick(e: MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) {
         const id = (e.features?.[0]?.properties as { id?: string })?.id;
         if (!id) return;
-        setSelectedHotel(id);
+        // Look up full Lodging from the current viewport's lodging — cached
+        // in the store so the panel survives subsequent viewport changes.
+        const hotel = useExplorer.getState().lodging.find((l) => l.id === id) ?? null;
+        if (!hotel) return;
+        setSelectedHotel(hotel);
         setEndpointHotel(id);
       }
+      function onClusterClick(
+        e: MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }
+      ) {
+        const f = e.features?.[0];
+        if (!f) return;
+        const clusterId = (f.properties as { cluster_id?: number }).cluster_id;
+        if (clusterId === undefined) return;
+        const src = map.getSource(HOTELS_SRC) as maplibregl.GeoJSONSource;
+        src.getClusterExpansionZoom(clusterId).then((zoom) => {
+          const coords = (f.geometry as GeoJSON.Point).coordinates as [number, number];
+          map.easeTo({ center: coords, zoom: Math.min(16, zoom + 0.5) });
+        });
+      }
       function onMapClick(e: MapMouseEvent) {
-        // Layer-specific handlers fire first; if a marker or route was hit,
-        // skip the background-clear behavior.
+        // Layer-specific handlers fire first; if a marker, cluster, or route
+        // was hit, skip the background-clear behavior.
         const hits = map.queryRenderedFeatures(e.point, {
-          layers: [HOTELS_LAYER, ROUTES_HIT_LAYER],
+          layers: [HOTELS_LAYER, HOTELS_CLUSTER_LAYER, ROUTES_HIT_LAYER],
         });
         if (hits.length > 0) return;
         setSelectedHotel(null);
@@ -152,7 +195,11 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
     [setSelectedHotel, setEndpointHotel, router]
   );
 
-  // Hotels source/layer.
+  // Hotels source/layers — clustered so a CA-wide view doesn't try to render
+  // thousands of overlapping markers. Three layers:
+  //   1. Cluster bubbles (point_count > 1)
+  //   2. Cluster count labels
+  //   3. Individual hotel markers (cluster_id is unset)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !styleReady) return;
@@ -165,12 +212,74 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
         geometry: { type: "Point", coordinates: [h.lon, h.lat] },
       })),
     };
-    setOrUpdateGeoJsonSource(map, HOTELS_SRC, fc);
+
+    const existing = map.getSource(HOTELS_SRC) as maplibregl.GeoJSONSource | undefined;
+    if (existing) {
+      existing.setData(fc);
+    } else {
+      map.addSource(HOTELS_SRC, {
+        type: "geojson",
+        data: fc,
+        cluster: true,
+        clusterRadius: 50,
+        // Clusters only at zoom ≤ 9 (statewide / multi-county view). By the
+        // default Marin fit zoom (~10) and any single-county zoom, individual
+        // markers show — clicks pin the hotel rather than expand a cluster.
+        clusterMaxZoom: 9,
+      });
+    }
+
+    if (!map.getLayer(HOTELS_CLUSTER_LAYER)) {
+      map.addLayer({
+        id: HOTELS_CLUSTER_LAYER,
+        type: "circle",
+        source: HOTELS_SRC,
+        filter: ["has", "point_count"],
+        paint: {
+          // Bubble color + size step by count.
+          "circle-color": [
+            "step",
+            ["get", "point_count"],
+            "#10b981", // 1–9
+            10, "#059669",
+            50, "#047857",
+            200, "#065f46",
+          ],
+          "circle-radius": [
+            "step",
+            ["get", "point_count"],
+            14,
+            10, 18,
+            50, 24,
+            200, 32,
+          ],
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 2,
+          "circle-opacity": 0.92,
+        },
+      });
+    }
+    if (!map.getLayer(HOTELS_CLUSTER_COUNT_LAYER)) {
+      map.addLayer({
+        id: HOTELS_CLUSTER_COUNT_LAYER,
+        type: "symbol",
+        source: HOTELS_SRC,
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": ["get", "point_count_abbreviated"],
+          "text-size": 12,
+        },
+        paint: {
+          "text-color": "#ffffff",
+        },
+      });
+    }
     if (!map.getLayer(HOTELS_LAYER)) {
       map.addLayer({
         id: HOTELS_LAYER,
         type: "circle",
         source: HOTELS_SRC,
+        filter: ["!", ["has", "point_count"]],
         paint: {
           "circle-radius": 6,
           "circle-color": "#0f172a",
@@ -184,6 +293,7 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
         id: HOTELS_LABEL_LAYER,
         type: "symbol",
         source: HOTELS_SRC,
+        filter: ["!", ["has", "point_count"]],
         layout: {
           "text-field": ["get", "name"],
           "text-size": 11,
@@ -218,6 +328,7 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
           id: ROUTES_LAYER,
           type: "line",
           source: ROUTES_SRC,
+          minzoom: ROUTES_MIN_ZOOM,
           paint: {
             "line-color": ["case", ["get", "matched"], ["get", "color"], "#9ca3af"],
             "line-width": ["case", ["get", "matched"], 4, 1],
@@ -229,13 +340,12 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
       );
     }
     if (!map.getLayer(ROUTES_HIT_LAYER)) {
-      // Invisible 14px-wide layer for hover/click — makes thin polylines
-      // easy to grab without thickening the visible style.
       map.addLayer(
         {
           id: ROUTES_HIT_LAYER,
           type: "line",
           source: ROUTES_SRC,
+          minzoom: ROUTES_MIN_ZOOM,
           paint: {
             "line-color": "#000",
             "line-width": 14,

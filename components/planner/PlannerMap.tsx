@@ -15,8 +15,7 @@ const LEG_COLORS = [
 ];
 
 export function PlannerMap() {
-  const lodging = usePlanner((s) => s.lodging);
-  const precomputedRoutes = usePlanner((s) => s.precomputedRoutes);
+  const hotelById = usePlanner((s) => s.hotelById);
   const legs = usePlanner((s) => s.legs);
   const pickingLegIndex = usePlanner((s) => s.pickingLegIndex);
   const setLegFromCustom = usePlanner((s) => s.setLegFromCustom);
@@ -28,14 +27,12 @@ export function PlannerMap() {
   // Resolve every leg whenever the legs change.
   useEffect(() => {
     let cancelled = false;
-    const lodgingById = new globalThis.Map(lodging.map((l) => [l.id, l]));
     Promise.all(
       legs.map((leg) =>
-        // Skip if endpoints are not yet picked.
         (isHotelEndpoint(leg.to) && !leg.to.id) ||
         (isHotelEndpoint(leg.from) && !leg.from.id)
           ? Promise.resolve(null)
-          : resolveLeg(leg, lodgingById, precomputedRoutes).catch(() => null)
+          : resolveLeg(leg, hotelById).catch(() => null)
       )
     ).then((results) => {
       if (!cancelled) {
@@ -66,7 +63,7 @@ export function PlannerMap() {
     return () => {
       cancelled = true;
     };
-  }, [legs, lodging, precomputedRoutes]);
+  }, [legs, hotelById]);
 
   const handleReady = useCallback(
     (map: MlMap) => {
@@ -127,7 +124,7 @@ export function PlannerMap() {
       if (leg.to.id) hotelIds.add(leg.to.id);
     });
     for (const id of hotelIds) {
-      const h = lodging.find((l) => l.id === id);
+      const h = hotelById[id];
       if (!h) continue;
       markerFeatures.push({
         type: "Feature",
@@ -205,7 +202,7 @@ export function PlannerMap() {
         /* no-op if bbox fails on a single point */
       }
     }
-  }, [resolved, legs, lodging]);
+  }, [resolved, legs, hotelById]);
 
   // Picking-mode cursor.
   useEffect(() => {

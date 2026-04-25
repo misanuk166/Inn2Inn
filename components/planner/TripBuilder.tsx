@@ -6,7 +6,6 @@ import { LegRow } from "./LegRow";
 import { ItinerariesDrawer } from "./ItinerariesDrawer";
 
 export function TripBuilder() {
-  const lodging = usePlanner((s) => s.lodging);
   const legs = usePlanner((s) => s.legs);
   const name = usePlanner((s) => s.name);
   const setName = usePlanner((s) => s.setName);
@@ -92,7 +91,6 @@ export function TripBuilder() {
                 key={i}
                 index={i}
                 leg={leg}
-                lodging={lodging}
                 isFirst={i === 0}
                 isLast={i === legs.length - 1}
               />
