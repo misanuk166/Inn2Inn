@@ -20,27 +20,52 @@ export interface OverpassResponse {
 
 export async function overpass(query: string): Promise<OverpassResponse> {
   // Overpass rejects requests without a proper User-Agent (returns 429 / 406).
-  // It also throttles aggressively — we retry once on 429/503.
+  // It also throttles aggressively, occasionally returns truncated JSON, and
+  // occasionally just times out. We retry transient failures.
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
-        "User-Agent": "Inn2Inn/0.1 (https://github.com/misanuk166/Inn2Inn; pipeline)",
-      },
-      body: "data=" + encodeURIComponent(query),
-    });
-    if (res.ok) return (await res.json()) as OverpassResponse;
+    let res: Response;
+    try {
+      res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+          "User-Agent": "Inn2Inn/0.1 (https://github.com/misanuk166/Inn2Inn; pipeline)",
+        },
+        body: "data=" + encodeURIComponent(query),
+      });
+    } catch (e) {
+      if (attempt < 2) {
+        await sleep(5000 * (attempt + 1));
+        continue;
+      }
+      throw new Error(`overpass network: ${(e as Error).message}`);
+    }
+
+    if (res.ok) {
+      try {
+        return (await res.json()) as OverpassResponse;
+      } catch (e) {
+        // Truncated/malformed JSON. Retry — usually a server-side glitch.
+        if (attempt < 2) {
+          await sleep(5000 * (attempt + 1));
+          continue;
+        }
+        throw new Error(`overpass JSON parse: ${(e as Error).message}`);
+      }
+    }
     const txt = await res.text();
     if ((res.status === 429 || res.status === 503 || res.status === 504) && attempt < 2) {
-      const wait = 5000 * (attempt + 1);
-      await new Promise((r) => setTimeout(r, wait));
+      await sleep(5000 * (attempt + 1));
       continue;
     }
     throw new Error(`overpass ${res.status}: ${txt.slice(0, 200)}`);
   }
   throw new Error("overpass: unreachable");
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 export function bboxClause(bbox: Bbox): string {
