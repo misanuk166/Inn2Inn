@@ -19,7 +19,10 @@ export function pgPool(): Pool {
     _pool = new Pool({
       connectionString: url,
       ssl: url.includes("supabase.co") ? { rejectUnauthorized: false } : false,
-      max: 4,
+      // Sized for the concurrent route-insert workload in 04-compute-routes.ts.
+      // Supabase's session pooler caps connections per project; 15 is a
+      // comfortable headroom under the default cap.
+      max: 15,
     });
   }
   return _pool;

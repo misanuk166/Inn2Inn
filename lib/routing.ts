@@ -26,18 +26,22 @@ export interface FootRouter {
   route(from: LngLat, to: LngLat): Promise<OsrmRouteResult | null>;
 }
 
-/** Returns the preferred router based on env vars. */
+/** Returns the preferred router based on env vars. OSRM_URL wins when set
+ * (user explicitly opted into self-hosted, which is fast + free at scale);
+ * ORS is the fallback for environments where local/self-hosted isn't
+ * reachable (e.g. Vercel runtime calling the on-demand routing endpoint). */
 export function makeFootRouter(timeoutMs = 15_000): FootRouter {
-  const orsKey = process.env.ORS_API_KEY;
-  if (orsKey) return makeOrsClient(orsKey, timeoutMs);
   const osrm = process.env.OSRM_URL;
   if (osrm && !osrm.includes("project-osrm.org")) {
     return makeOsrmClient(osrm, timeoutMs);
   }
+  const orsKey = process.env.ORS_API_KEY;
+  if (orsKey) return makeOrsClient(orsKey, timeoutMs);
   throw new Error(
-    "No foot-routing provider configured. Set ORS_API_KEY (recommended, free tier at openrouteservice.org) " +
-      "or point OSRM_URL at a self-hosted OSRM with the foot profile loaded. " +
-      "router.project-osrm.org is car-only and must not be used for inn-to-inn."
+    "No foot-routing provider configured. Set OSRM_URL (self-hosted OSRM with " +
+      "foot profile, recommended for bulk) or ORS_API_KEY (OpenRouteService " +
+      "free tier, suitable for low-volume on-demand). router.project-osrm.org " +
+      "is car-only and must not be used for inn-to-inn."
   );
 }
 
