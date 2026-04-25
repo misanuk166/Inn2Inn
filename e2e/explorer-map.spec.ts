@@ -7,7 +7,9 @@ import { test, expect, type Page, type Request } from "@playwright/test";
 //  - No "Style is not done loading" warning in the console (the regression
 //    we're guarding against — map looked blank even though tiles fetched)
 
-const TILE_HOST = "tiles.openfreemap.org";
+// Tile responses can come from any of our supported style providers
+// (OpenFreeMap, OpenTopoMap, Esri). Match by URL shape, not host.
+const TILE_URL_PATTERN = /\/(\d+)\/(\d+)\/(\d+)\.(png|pbf|jpg|webp)/;
 const MIN_TILE_SUCCESSES = 3;
 
 test.describe("Explorer map", () => {
@@ -19,7 +21,7 @@ test.describe("Explorer map", () => {
 
     page.on("response", async (res) => {
       const url = res.url();
-      if (url.includes(TILE_HOST) && (url.endsWith(".pbf") || url.endsWith(".png"))) {
+      if (TILE_URL_PATTERN.test(url)) {
         tileResponses.push({ url, status: res.status() });
       }
     });
@@ -123,6 +125,98 @@ test.describe("Explorer map", () => {
     // We also take a screenshot (above) for human verification. Pixel-level
     // drawImage sampling is unreliable across timing — rely on the canvas
     // dimensions + MapLibre's own renderedFeaturesCount instead.
+  });
+
+  test("clicking a hotel filters routes; clicking elsewhere clears", async ({ page }) => {
+    await page.goto("/explorer", { waitUntil: "domcontentloaded" });
+    await waitForMaplibreIdle(page, 20_000);
+
+    // Sidebar shows "<filtered> routes of <total>". The default sliders
+    // (max distance, max gain) already filter some out — use the filtered
+    // count *before any hotel click* as the baseline.
+    const baselineText = await page
+      .locator("aside :text-matches('routes? of [0-9]+')")
+      .first()
+      .textContent();
+    const baselineFiltered = Number(baselineText?.match(/^(\d+)/)?.[1] ?? 0);
+    expect(baselineFiltered, "expected route count visible in sidebar").toBeGreaterThan(0);
+
+    // Pick the first hotel and click its on-canvas pixel.
+    const clicked = await page.evaluate(() => {
+      const m = (window as unknown as {
+        __inn2innMap?: {
+          querySourceFeatures: (id: string) => Array<{
+            geometry: { coordinates: [number, number] };
+            properties: { id: string; name: string };
+          }>;
+          project: (lngLat: { lng: number; lat: number }) => { x: number; y: number };
+          getCanvas: () => HTMLCanvasElement;
+        };
+      }).__inn2innMap;
+      if (!m) return null;
+      const f = m.querySourceFeatures("explorer-hotels")[0];
+      if (!f) return null;
+      const [lng, lat] = f.geometry.coordinates;
+      const p = m.project({ lng, lat });
+      const c = m.getCanvas().getBoundingClientRect();
+      return { px: c.left + p.x, py: c.top + p.y };
+    });
+    expect(clicked, "no hotels in source").not.toBeNull();
+    await page.mouse.click(clicked!.px, clicked!.py);
+    await page.waitForTimeout(400);
+
+    const afterClickText = await page
+      .locator("aside :text-matches('routes? of [0-9]+')")
+      .first()
+      .textContent();
+    const afterClickCount = Number(afterClickText?.match(/^(\d+)/)?.[1] ?? baselineFiltered);
+    expect(
+      afterClickCount,
+      `clicking a hotel should narrow the list (was ${baselineFiltered}, now ${afterClickCount})`
+    ).toBeLessThan(baselineFiltered);
+
+    // Click somewhere on the canvas that's clearly empty (lower-middle, away
+    // from the style switcher in the top-left and the hotel panel on the right).
+    const empty = await page.evaluate(() => {
+      const c = (
+        document.querySelector(".maplibregl-canvas") as HTMLCanvasElement
+      ).getBoundingClientRect();
+      // Search outward from canvas center for a pixel with no hotel marker.
+      const m = (window as unknown as {
+        __inn2innMap?: {
+          queryRenderedFeatures: (
+            point: [number, number],
+            opts: { layers: string[] }
+          ) => unknown[];
+        };
+      }).__inn2innMap!;
+      for (let dx = 0; dx < c.width; dx += 50) {
+        for (let dy = 0; dy < c.height; dy += 50) {
+          const px = c.width / 2 + dx;
+          const py = c.height / 2 + dy;
+          if (px > c.width - 20 || py > c.height - 20) continue;
+          const hits = m.queryRenderedFeatures([px, py], {
+            layers: ["explorer-hotels-layer"],
+          });
+          if (hits.length === 0) {
+            return { x: c.left + px, y: c.top + py };
+          }
+        }
+      }
+      return { x: c.left + c.width - 30, y: c.top + c.height - 30 };
+    });
+    await page.mouse.click(empty.x, empty.y);
+    await page.waitForTimeout(400);
+
+    const clearedText = await page
+      .locator("aside :text-matches('routes? of [0-9]+')")
+      .first()
+      .textContent();
+    const clearedCount = Number(clearedText?.match(/^(\d+)/)?.[1] ?? 0);
+    expect(
+      clearedCount,
+      "clicking empty map should restore the route list to its pre-click count"
+    ).toBe(baselineFiltered);
   });
 });
 

@@ -22,6 +22,7 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
   const maxGain = useExplorer((s) => s.maxGain);
   const endpointHotelId = useExplorer((s) => s.endpointHotelId);
   const setSelectedHotel = useExplorer((s) => s.setSelectedHotel);
+  const setEndpointHotel = useExplorer((s) => s.setEndpointHotel);
 
   const mapRef = useRef<MlMap | null>(null);
   const [styleReady, setStyleReady] = useState(0); // bumps on every style.load
@@ -40,10 +41,14 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
       mapRef.current = map;
       setStyleReady((n) => n + 1);
 
-      // Click/hover behavior only needs to be registered once per layer, but
-      // since layers get re-created on style swap, register after each ready.
+      // Hotel-marker clicks pin that hotel as the endpoint filter (so the
+      // route list and dimming on the map reflect just routes touching it)
+      // AND open the detail panel. Map background clicks clear both.
+      // Re-register after each style swap since layers get rebuilt.
       map.off("click", HOTELS_LAYER, onHotelClick);
       map.on("click", HOTELS_LAYER, onHotelClick);
+      map.off("click", onMapClick);
+      map.on("click", onMapClick);
       map.off("mouseenter", HOTELS_LAYER, onHotelEnter);
       map.on("mouseenter", HOTELS_LAYER, onHotelEnter);
       map.off("mouseleave", HOTELS_LAYER, onHotelLeave);
@@ -51,7 +56,17 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
 
       function onHotelClick(e: MapMouseEvent & { features?: maplibregl.MapGeoJSONFeature[] }) {
         const id = (e.features?.[0]?.properties as { id?: string })?.id;
-        if (id) setSelectedHotel(id);
+        if (!id) return;
+        setSelectedHotel(id);
+        setEndpointHotel(id);
+      }
+      function onMapClick(e: MapMouseEvent) {
+        // If the click also hit a hotel marker, the layer-specific handler
+        // ran first and already set the filter — skip clearing here.
+        const hits = map.queryRenderedFeatures(e.point, { layers: [HOTELS_LAYER] });
+        if (hits.length > 0) return;
+        setSelectedHotel(null);
+        setEndpointHotel(null);
       }
       function onHotelEnter() {
         map.getCanvas().style.cursor = "pointer";
@@ -60,7 +75,7 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
         map.getCanvas().style.cursor = "";
       }
     },
-    [setSelectedHotel]
+    [setSelectedHotel, setEndpointHotel]
   );
 
   // Hotels: add or update the hotels source + layer whenever map is ready
