@@ -148,9 +148,9 @@ export function ExplorerMap({ initialBbox }: { initialBbox?: Bbox }) {
           type: "line",
           source: ROUTES_SRC,
           paint: {
-            "line-color": ["get", "color"],
-            "line-width": ["case", ["get", "matched"], 4, 2],
-            "line-opacity": ["case", ["get", "matched"], 0.95, 0.25],
+            "line-color": ["case", ["get", "matched"], ["get", "color"], "#9ca3af"],
+            "line-width": ["case", ["get", "matched"], 4, 1],
+            "line-opacity": ["case", ["get", "matched"], 0.95, 0.45],
           },
           layout: { "line-cap": "round", "line-join": "round" },
         },
