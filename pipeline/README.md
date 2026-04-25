@@ -36,9 +36,33 @@ Run a subset with `--only=lodging,routes` or `--skip=pois`.
 
 1. `cp pipeline/regions/_template.yaml pipeline/regions/<slug>.yaml`
 2. Fill in `slug`, `name`, `bbox`, optional `seedLodging`.
-3. `npm run pipeline -- --region=<slug>`
+3. Make sure your local OSRM covers the region's bbox (see below). If the
+   region falls outside, build a wider OSRM with `OSRM_BBOX="..." OSRM_NAME="..." OSRM_PORT="..." bash pipeline/scripts/setup-osrm-local.sh`.
+4. `OSRM_URL=http://localhost:<port> npm run pipeline -- --region=<slug>`
 
-The new region appears in the app's `<RegionPicker>` automatically once `status='ready'`.
+The new region appears in the landing page and `<RegionPicker>` automatically
+once `status='ready'`.
+
+## California region coverage
+
+Two OSRM extracts cover all currently-defined regions:
+
+| Extract     | Port | Bbox                            | Counties                                   |
+|-------------|------|---------------------------------|--------------------------------------------|
+| bayarea     | 5000 | -123.5,36.9,-121.4,38.7         | Marin, Napa, Sonoma, San Mateo             |
+| norcal      | 5001 | -124.5,35.0,-117.5,42.0         | All of the above plus Mariposa, Tuolumne, El Dorado, Placer, Mono, Inyo, Monterey, San Luis Obispo, Mendocino, Humboldt, Santa Cruz, Madera |
+
+**Not yet covered (need a SoCal extract):** Santa Barbara, San Bernardino.
+Build with:
+
+```
+OSRM_BBOX="-118.0,33.5,-115.5,35.2" \
+OSRM_NAME="socal-foot" \
+OSRM_PORT="5002" \
+bash pipeline/scripts/setup-osrm-local.sh
+```
+
+Then run those counties' pipelines with `OSRM_URL=http://localhost:5002`.
 
 ## Foot-routing provider
 

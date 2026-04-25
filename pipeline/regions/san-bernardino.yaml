@@ -1,0 +1,46 @@
+slug: san-bernardino
+name: San Bernardino County, CA (Big Bear / Joshua Tree NW)
+# Limited to the hike-relevant pockets — Big Bear, San Bernardino Mountains,
+# and the NW edge of Joshua Tree. Excludes the suburban basin.
+bbox: [-117.30, 34.05, -116.20, 34.85]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/the-lodge-at-big-bear
+    name: The Lodge at Big Bear Lake
+    type: lodge
+    lat: 34.24420
+    lon: -116.91210
+    city: Big Bear Lake
+    state: CA
+    address: 40650 Village Dr, Big Bear Lake, CA 92315
+    priceRange: $$$
+    description: Mountain lodge in The Village at Big Bear Lake.
+    website: https://www.thelodgeatbigbear.com/
+
+  - id: seed/cienega-creek
+    name: Northwoods Resort
+    type: lodge
+    lat: 34.24000
+    lon: -116.92920
+    city: Big Bear Lake
+    state: CA
+    address: 40650 Village Dr, Big Bear Lake, CA 92315
+    priceRange: $$
+    description: Family lodge near the Pacific Crest Trail and Big Bear Lake.
+    website: https://www.northwoodsresort.com/
+
+  - id: seed/wonder-valley
+    name: Wonder Valley Inn
+    type: inn
+    lat: 34.18030
+    lon: -115.92880
+    city: Twentynine Palms
+    state: CA
+    address: 80623 Amboy Rd, Twentynine Palms, CA 92277
+    priceRange: $$
+    description: Desert inn at the northern edge of Joshua Tree.
+    website: https://wondervalleyinn.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

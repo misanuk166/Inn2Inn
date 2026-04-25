@@ -1,0 +1,69 @@
+slug: el-dorado
+name: El Dorado County, CA (S. Lake Tahoe)
+# El Dorado County — South Lake Tahoe, Desolation Wilderness, Apple Hill.
+bbox: [-120.95, 38.55, -119.85, 39.10]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/edgewood-tahoe
+    name: Edgewood Tahoe Resort
+    type: lodge
+    lat: 38.96820
+    lon: -119.94820
+    city: Stateline
+    state: NV
+    address: 100 Lake Pkwy, Stateline, NV 89449
+    priceRange: $$$$
+    description: Lakefront luxury resort on the south shore of Lake Tahoe.
+    website: https://www.edgewoodtahoe.com/
+
+  - id: seed/camp-richardson
+    name: Camp Richardson Resort
+    type: lodge
+    lat: 38.93500
+    lon: -120.04300
+    city: South Lake Tahoe
+    state: CA
+    address: 1900 Jameson Beach Rd, South Lake Tahoe, CA 96150
+    priceRange: $$
+    description: Historic 1921 lakeside resort with cabins, hiking, and biking access.
+    website: https://camprichardson.com/
+
+  - id: seed/strawberry-lodge
+    name: Strawberry Lodge
+    type: lodge
+    lat: 38.80300
+    lon: -120.40400
+    city: Kyburz
+    state: CA
+    address: 17510 Hwy 50, Kyburz, CA 95720
+    priceRange: $$
+    description: Historic 1939 lodge on the South Fork American River, gateway to Desolation.
+    website: https://www.strawberry-lodge.com/
+
+  - id: seed/echo-chalet
+    name: Echo Chalet
+    type: cabin
+    lat: 38.83340
+    lon: -120.04130
+    city: Echo Lake
+    state: CA
+    address: 9900 Echo Lakes Rd, Twin Bridges, CA 95735
+    priceRange: $$
+    description: Rustic cabins at Echo Lakes, trailhead for the Tahoe Rim and PCT.
+    website: https://www.echochalet.com/
+
+  - id: seed/sorensens-resort
+    name: Sorensen's Resort
+    type: cabin
+    lat: 38.77770
+    lon: -119.85320
+    city: Hope Valley
+    state: CA
+    address: 14255 Hwy 88, Hope Valley, CA 96120
+    priceRange: $$
+    description: Cabin resort in Hope Valley with cross-country skiing and hiking.
+    website: https://www.sorensensresort.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

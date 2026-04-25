@@ -1,0 +1,69 @@
+slug: san-luis-obispo
+name: San Luis Obispo County, CA
+# SLO County — Cambria, Cayucos, Morro Bay, Avila, Pismo, Paso Robles.
+bbox: [-121.40, 34.95, -119.40, 35.85]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/cambria-pines-lodge
+    name: Cambria Pines Lodge
+    type: lodge
+    lat: 35.56450
+    lon: -121.08580
+    city: Cambria
+    state: CA
+    address: 2905 Burton Dr, Cambria, CA 93428
+    priceRange: $$$
+    description: 25-acre wooded retreat above Moonstone Beach with extensive trails.
+    website: https://www.cambriapineslodge.com/
+
+  - id: seed/j-patrick-house
+    name: J. Patrick House
+    type: inn
+    lat: 35.56770
+    lon: -121.07520
+    city: Cambria
+    state: CA
+    address: 2990 Burton Dr, Cambria, CA 93428
+    priceRange: $$
+    description: Authentic Irish log home B&B in Cambria's pine forest.
+    website: https://www.jpatrickhouse.com/
+
+  - id: seed/inn-at-morro-bay
+    name: Inn at Morro Bay
+    type: inn
+    lat: 35.34370
+    lon: -120.84510
+    city: Morro Bay
+    state: CA
+    address: 60 State Park Rd, Morro Bay, CA 93442
+    priceRange: $$$
+    description: Bayfront inn in Morro Bay State Park.
+    website: https://innatmorrobay.com/
+
+  - id: seed/madonna-inn
+    name: Madonna Inn
+    type: hotel
+    lat: 35.25430
+    lon: -120.66660
+    city: San Luis Obispo
+    state: CA
+    address: 100 Madonna Rd, San Luis Obispo, CA 93405
+    priceRange: $$$
+    description: Famous 1958 themed-room inn at the base of Cerro San Luis.
+    website: https://www.madonnainn.com/
+
+  - id: seed/avila-village-inn
+    name: Avila Village Inn
+    type: inn
+    lat: 35.18820
+    lon: -120.71250
+    city: Avila Beach
+    state: CA
+    address: 6655 Bay Laurel Pl, Avila Beach, CA 93424
+    priceRange: $$$
+    description: Boutique inn near the Bob Jones Trail and Avila Valley.
+    website: https://avilavillageinn.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

@@ -1,0 +1,81 @@
+slug: mariposa
+name: Mariposa County, CA (Yosemite)
+# Mariposa County — Yosemite Valley + the Wawona / Hwy 41 corridor.
+bbox: [-120.10, 37.30, -119.30, 37.95]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/ahwahnee
+    name: The Ahwahnee
+    type: hotel
+    lat: 37.74600
+    lon: -119.57300
+    city: Yosemite Valley
+    state: CA
+    address: 1 Ahwahnee Dr, Yosemite Valley, CA 95389
+    priceRange: $$$$
+    description: 1927 National Historic Landmark hotel beneath Half Dome and Glacier Point.
+    website: https://www.travelyosemite.com/lodging/the-ahwahnee/
+
+  - id: seed/yosemite-valley-lodge
+    name: Yosemite Valley Lodge
+    type: lodge
+    lat: 37.74170
+    lon: -119.59870
+    city: Yosemite Valley
+    state: CA
+    address: 9006 Yosemite Lodge Dr, Yosemite Valley, CA 95389
+    priceRange: $$$
+    description: Lodge at the base of Yosemite Falls with trail access throughout the valley.
+    website: https://www.travelyosemite.com/lodging/yosemite-valley-lodge/
+
+  - id: seed/curry-village
+    name: Curry Village
+    type: cabin
+    lat: 37.74180
+    lon: -119.57350
+    city: Yosemite Valley
+    state: CA
+    address: 9010 Curry Village Dr, Yosemite Valley, CA 95389
+    priceRange: $$
+    description: Tent cabins and rustic lodging beneath Glacier Point.
+    website: https://www.travelyosemite.com/lodging/curry-village/
+
+  - id: seed/wawona-hotel
+    name: Wawona Hotel
+    type: hotel
+    lat: 37.53850
+    lon: -119.65700
+    city: Wawona
+    state: CA
+    address: 8308 Wawona Rd, Wawona, CA 95389
+    priceRange: $$$
+    description: Victorian-era National Historic Landmark hotel near Mariposa Grove.
+    website: https://www.travelyosemite.com/lodging/wawona-hotel/
+
+  - id: seed/yosemite-bug
+    name: Yosemite Bug Rustic Mountain Resort
+    type: hostel
+    lat: 37.51140
+    lon: -119.92500
+    city: Midpines
+    state: CA
+    address: 6979 Hwy 140, Midpines, CA 95345
+    priceRange: $
+    description: Rustic mountain hostel + lodge halfway between Yosemite Valley and Mariposa town.
+    website: https://www.yosemitebug.com/
+
+  - id: seed/yosemite-view-lodge
+    name: Yosemite View Lodge
+    type: lodge
+    lat: 37.66520
+    lon: -119.78130
+    city: El Portal
+    state: CA
+    address: 11136 Hwy 140, El Portal, CA 95318
+    priceRange: $$$
+    description: Riverside lodge at the western entrance to Yosemite.
+    website: https://www.yosemiteresorts.us/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

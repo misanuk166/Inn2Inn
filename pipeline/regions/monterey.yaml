@@ -1,0 +1,81 @@
+slug: monterey
+name: Monterey County, CA (Big Sur / Carmel)
+# Monterey County — Big Sur coast, Carmel, Pacific Grove, Pinnacles foothills.
+bbox: [-122.10, 35.75, -120.20, 36.95]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/post-ranch-inn
+    name: Post Ranch Inn
+    type: inn
+    lat: 36.22790
+    lon: -121.76820
+    city: Big Sur
+    state: CA
+    address: 47900 Hwy 1, Big Sur, CA 93920
+    priceRange: $$$$
+    description: Cliffside cabins on a ridge 1,200 ft above the Pacific.
+    website: https://www.postranchinn.com/
+
+  - id: seed/ventana-big-sur
+    name: Ventana Big Sur
+    type: lodge
+    lat: 36.22360
+    lon: -121.76020
+    city: Big Sur
+    state: CA
+    address: 48123 Hwy 1, Big Sur, CA 93920
+    priceRange: $$$$
+    description: 160-acre Alila resort with private trails on the Big Sur coast.
+    website: https://www.ventanabigsur.com/
+
+  - id: seed/big-sur-river-inn
+    name: Big Sur River Inn
+    type: inn
+    lat: 36.25240
+    lon: -121.77530
+    city: Big Sur
+    state: CA
+    address: 46800 Hwy 1, Big Sur, CA 93920
+    priceRange: $$$
+    description: Riverside inn at the entrance to Pfeiffer Big Sur State Park.
+    website: https://www.bigsurriverinn.com/
+
+  - id: seed/glen-oaks-big-sur
+    name: Glen Oaks Big Sur
+    type: lodge
+    lat: 36.24820
+    lon: -121.77600
+    city: Big Sur
+    state: CA
+    address: 47080 Hwy 1, Big Sur, CA 93920
+    priceRange: $$$
+    description: Restored 1950s motor lodge with redwood cabins near Pfeiffer Beach.
+    website: https://www.glenoaksbigsur.com/
+
+  - id: seed/deetjens
+    name: Deetjen's Big Sur Inn
+    type: inn
+    lat: 36.20650
+    lon: -121.74110
+    city: Big Sur
+    state: CA
+    address: 48865 Hwy 1, Big Sur, CA 93920
+    priceRange: $$
+    description: 1930s Norwegian-style hand-built inn in a redwood canyon.
+    website: https://www.deetjens.com/
+
+  - id: seed/treebones-resort
+    name: Treebones Resort
+    type: lodge
+    lat: 35.86450
+    lon: -121.42710
+    city: Big Sur
+    state: CA
+    address: 71895 Hwy 1, Big Sur, CA 93920
+    priceRange: $$$
+    description: Yurt and tent lodge on the southern Big Sur coast.
+    website: https://www.treebonesresort.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

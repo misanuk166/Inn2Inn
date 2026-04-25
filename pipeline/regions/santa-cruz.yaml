@@ -1,0 +1,56 @@
+slug: santa-cruz
+name: Santa Cruz County, CA
+bbox: [-122.35, 36.85, -121.55, 37.30]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/chaminade-resort
+    name: Chaminade Resort & Spa
+    type: lodge
+    lat: 37.00390
+    lon: -121.97180
+    city: Santa Cruz
+    state: CA
+    address: 1 Chaminade Ln, Santa Cruz, CA 95065
+    priceRange: $$$
+    description: Hilltop resort on 300 forested acres above Santa Cruz with extensive trails.
+    website: https://www.chaminade.com/
+
+  - id: seed/dream-inn
+    name: Dream Inn Santa Cruz
+    type: hotel
+    lat: 36.96150
+    lon: -122.02410
+    city: Santa Cruz
+    state: CA
+    address: 175 W Cliff Dr, Santa Cruz, CA 95060
+    priceRange: $$$
+    description: Beachfront hotel above Cowell Beach.
+    website: https://www.dreaminnsantacruz.com/
+
+  - id: seed/big-basin-tent-cabins
+    name: Big Basin Tent Cabins (Sempervirens)
+    type: cabin
+    lat: 37.17280
+    lon: -122.22260
+    city: Boulder Creek
+    state: CA
+    address: 21600 Big Basin Way, Boulder Creek, CA 95006
+    priceRange: $
+    description: Rustic tent cabins inside California's oldest state park.
+    website: https://sempervirens.org/
+
+  - id: seed/historic-sand-rock-farm
+    name: Sand Rock Farm Bed and Breakfast
+    type: inn
+    lat: 36.99110
+    lon: -121.86440
+    city: Aptos
+    state: CA
+    address: 6901 Freedom Blvd, Aptos, CA 95003
+    priceRange: $$
+    description: Restored Victorian farm B&B near Forest of Nisene Marks State Park.
+    website: https://www.sandrockfarm.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

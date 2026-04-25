@@ -29,9 +29,13 @@ SOURCE_PBF="california-latest.osm.pbf"
 # Bay Area bbox covers Marin, SF, East Bay, Peninsula, North/South Bay, plus
 # a margin into Sonoma/Napa. Expand to add more counties.
 BBOX="${OSRM_BBOX:--123.5,36.9,-121.4,38.7}"
-CLIPPED_PBF="bayarea-foot.osm.pbf"
-OSRM_BASE="bayarea-foot"
-CONTAINER_NAME="inn2inn-osrm"
+# Use a custom OSRM_NAME (and a port via OSRM_PORT) when building a parallel
+# graph for a larger region without disturbing an existing one.
+OSRM_NAME="${OSRM_NAME:-bayarea-foot}"
+OSRM_PORT="${OSRM_PORT:-5000}"
+CLIPPED_PBF="${OSRM_NAME}.osm.pbf"
+OSRM_BASE="${OSRM_NAME}"
+CONTAINER_NAME="inn2inn-osrm-${OSRM_NAME}"
 
 mkdir -p "$OSRM_DATA_DIR"
 cd "$OSRM_DATA_DIR"
@@ -73,9 +77,11 @@ else
     osrm-partition "/data/${OSRM_BASE}.osrm"
 fi
 
-if [ -f "${OSRM_BASE}.osrm.cells" ]; then
+if [ -f "${OSRM_BASE}.osrm.mldgr" ]; then
   echo "▸ osrm-customize output already present"
 else
+  # NB: cells is created by osrm-partition, not customize. The actual
+  # customize outputs are mldgr + cell_metrics. Check for mldgr.
   echo "▸ Running osrm-customize..."
   docker run --rm -t -v "$OSRM_DATA_DIR:/data" ghcr.io/project-osrm/osrm-backend:v5.27.1 \
     osrm-customize "/data/${OSRM_BASE}.osrm"
@@ -85,23 +91,23 @@ fi
 echo "▸ Starting osrm-routed container..."
 docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
 docker run -d --name "$CONTAINER_NAME" --restart unless-stopped \
-  -p 5000:5000 -v "$OSRM_DATA_DIR:/data" \
+  -p "${OSRM_PORT}:5000" -v "$OSRM_DATA_DIR:/data" \
   ghcr.io/project-osrm/osrm-backend:v5.27.1 \
   osrm-routed --algorithm mld "/data/${OSRM_BASE}.osrm" >/dev/null
 
 # 5. Wait for the server to accept a sample foot route in Marin
-SAMPLE_URL="http://localhost:5000/route/v1/foot/-122.5786,37.8623;-122.6388,37.8989?overview=false"
+SAMPLE_URL="http://localhost:${OSRM_PORT}/route/v1/foot/-122.5786,37.8623;-122.6388,37.8989?overview=false"
 echo -n "▸ Waiting for OSRM to come up"
 for i in $(seq 1 60); do
   if curl -sf "$SAMPLE_URL" >/dev/null 2>&1; then
     echo " ✓"
     echo
-    echo "OSRM is running at http://localhost:5000"
+    echo "OSRM is running at http://localhost:${OSRM_PORT}"
     echo "  Sample call returns:"
     curl -s "$SAMPLE_URL" | head -c 200
     echo
     echo
-    echo "Next: set OSRM_URL=http://localhost:5000 in .env.local, then run"
+    echo "Next: set OSRM_URL=http://localhost:${OSRM_PORT} in .env.local, then run"
     echo "      npm run pipeline -- --region=marin --only=routes,scoring,pois,ready"
     exit 0
   fi

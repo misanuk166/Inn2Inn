@@ -31,7 +31,7 @@ export default function RootLayout({
     >
       <body className="flex h-full flex-col bg-zinc-50 text-zinc-900">
         <header className="flex shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-4 py-2 shadow-sm">
-          <Link href="/explorer" className="flex items-center gap-2 font-semibold tracking-tight">
+          <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="inline-block h-6 w-6 rounded-md bg-emerald-600" aria-hidden />
             Inn2Inn
           </Link>

@@ -1,0 +1,44 @@
+slug: madera
+name: Madera County, CA (Yosemite South)
+bbox: [-120.20, 36.85, -119.05, 37.85]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/tenaya-lodge
+    name: Tenaya Lodge at Yosemite
+    type: lodge
+    lat: 37.50920
+    lon: -119.62130
+    city: Fish Camp
+    state: CA
+    address: 1122 CA-41, Fish Camp, CA 93623
+    priceRange: $$$
+    description: Mountain resort 2 mi from Yosemite's south entrance.
+    website: https://www.tenayalodge.com/
+
+  - id: seed/the-narrow-gauge
+    name: The Narrow Gauge Inn
+    type: inn
+    lat: 37.48100
+    lon: -119.63320
+    city: Fish Camp
+    state: CA
+    address: 48571 CA-41, Fish Camp, CA 93623
+    priceRange: $$
+    description: Family-run mountain inn near Yosemite's south gate.
+    website: https://www.narrowgaugeinn.com/
+
+  - id: seed/the-pines-resort
+    name: The Pines Resort
+    type: lodge
+    lat: 37.27530
+    lon: -119.55730
+    city: Bass Lake
+    state: CA
+    address: 54432 Rd 432, Bass Lake, CA 93604
+    priceRange: $$$
+    description: Lakeside chalets and suites at Bass Lake.
+    website: https://www.basslake.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

@@ -1,0 +1,56 @@
+slug: santa-barbara
+name: Santa Barbara County, CA
+bbox: [-120.65, 34.40, -119.45, 35.10]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/san-ysidro-ranch
+    name: San Ysidro Ranch
+    type: lodge
+    lat: 34.45160
+    lon: -119.62810
+    city: Santa Barbara
+    state: CA
+    address: 900 San Ysidro Ln, Santa Barbara, CA 93108
+    priceRange: $$$$
+    description: Historic Montecito hideaway in the Santa Ynez foothills.
+    website: https://www.sanysidroranch.com/
+
+  - id: seed/el-encanto
+    name: El Encanto, A Belmond Hotel
+    type: hotel
+    lat: 34.43500
+    lon: -119.71280
+    city: Santa Barbara
+    state: CA
+    address: 800 Alvarado Pl, Santa Barbara, CA 93103
+    priceRange: $$$$
+    description: Hilltop bungalow estate above Santa Barbara's Riviera.
+    website: https://www.belmond.com/hotels/north-america/usa/santa-barbara/belmond-el-encanto/
+
+  - id: seed/inn-at-mattei
+    name: Mattei's Tavern
+    type: inn
+    lat: 34.61190
+    lon: -120.13680
+    city: Los Olivos
+    state: CA
+    address: 2350 Railway Ave, Los Olivos, CA 93441
+    priceRange: $$$$
+    description: Restored 1886 stagecoach inn in the Santa Ynez Valley.
+    website: https://aubergeresorts.com/matteistavern/
+
+  - id: seed/circle-bar-b
+    name: Circle Bar B Guest Ranch
+    type: lodge
+    lat: 34.50080
+    lon: -120.04680
+    city: Goleta
+    state: CA
+    address: 1800 Refugio Rd, Goleta, CA 93117
+    priceRange: $$$
+    description: Cabin guest ranch above Refugio State Beach with horseback trails.
+    website: https://www.circlebarb.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

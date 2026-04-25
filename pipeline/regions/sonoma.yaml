@@ -1,0 +1,81 @@
+slug: sonoma
+name: Sonoma County, CA
+# Sonoma County including Russian River, Sonoma Coast, and the Mayacamas.
+bbox: [-123.55, 38.10, -122.35, 38.85]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/farmhouse-inn
+    name: Farmhouse Inn
+    type: inn
+    lat: 38.50450
+    lon: -122.91120
+    city: Forestville
+    state: CA
+    address: 7871 River Rd, Forestville, CA 95436
+    priceRange: $$$$
+    description: Boutique luxury inn near Russian River wineries.
+    website: https://farmhouseinn.com/
+
+  - id: seed/boon-hotel
+    name: boon hotel + spa
+    type: hotel
+    lat: 38.51330
+    lon: -123.00210
+    city: Guerneville
+    state: CA
+    address: 14711 Armstrong Woods Rd, Guerneville, CA 95446
+    priceRange: $$$
+    description: Modern retreat next to Armstrong Redwoods State Reserve.
+    website: https://boonhotels.com/
+
+  - id: seed/macarthur-place
+    name: MacArthur Place Hotel & Spa
+    type: hotel
+    lat: 38.28720
+    lon: -122.45650
+    city: Sonoma
+    state: CA
+    address: 29 E MacArthur St, Sonoma, CA 95476
+    priceRange: $$$
+    description: Historic estate hotel one block from Sonoma Plaza.
+    website: https://macarthurplace.com/
+
+  - id: seed/madrona-manor
+    name: Madrona Manor
+    type: inn
+    lat: 38.62050
+    lon: -122.88290
+    city: Healdsburg
+    state: CA
+    address: 1001 Westside Rd, Healdsburg, CA 95448
+    priceRange: $$$
+    description: Restored 1881 Victorian mansion in Dry Creek Valley wine country.
+    website: https://www.madronamanor.com/
+
+  - id: seed/timber-cove
+    name: Timber Cove Resort
+    type: lodge
+    lat: 38.59230
+    lon: -123.36810
+    city: Jenner
+    state: CA
+    address: 21780 N Coast Hwy 1, Jenner, CA 95450
+    priceRange: $$$
+    description: Cliffside resort on the Sonoma Coast with sweeping ocean views.
+    website: https://www.timbercoveresort.com/
+
+  - id: seed/west-sonoma-inn
+    name: West Sonoma Inn & Spa
+    type: inn
+    lat: 38.49680
+    lon: -123.00270
+    city: Guerneville
+    state: CA
+    address: 14100 Brookside Ln, Guerneville, CA 95446
+    priceRange: $$
+    description: Riverside inn near Russian River and Armstrong Redwoods.
+    website: https://westsonomainn.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

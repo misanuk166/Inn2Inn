@@ -1,0 +1,81 @@
+slug: napa
+name: Napa County, CA
+# Napa County, with margin into the Mayacamas Mountains for Mt St Helena routes.
+bbox: [-122.65, 38.15, -122.05, 38.85]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/calistoga-ranch
+    name: Calistoga Ranch
+    type: lodge
+    lat: 38.59890
+    lon: -122.55420
+    city: Calistoga
+    state: CA
+    address: 580 Lommel Rd, Calistoga, CA 94515
+    priceRange: $$$$
+    description: Luxury all-cabin resort tucked into a private canyon at the foot of Mt St Helena.
+    website: https://www.aubergeresorts.com/calistogaranch/
+
+  - id: seed/solage
+    name: Solage Calistoga
+    type: hotel
+    lat: 38.57860
+    lon: -122.57620
+    city: Calistoga
+    state: CA
+    address: 755 Silverado Trail N, Calistoga, CA 94515
+    priceRange: $$$$
+    description: Spa resort with geothermal pools at the north end of Napa Valley.
+    website: https://www.aubergeresorts.com/solage/
+
+  - id: seed/indian-springs
+    name: Indian Springs Calistoga
+    type: hotel
+    lat: 38.58620
+    lon: -122.58060
+    city: Calistoga
+    state: CA
+    address: 1712 Lincoln Ave, Calistoga, CA 94515
+    priceRange: $$$
+    description: Historic 1862 mineral springs resort with Olympic-sized geothermal pool.
+    website: https://www.indianspringscalistoga.com/
+
+  - id: seed/meadowood
+    name: Meadowood Napa Valley
+    type: lodge
+    lat: 38.50490
+    lon: -122.43980
+    city: St Helena
+    state: CA
+    address: 900 Meadowood Ln, St Helena, CA 94574
+    priceRange: $$$$
+    description: 250-acre forested resort with hiking trails and croquet lawns.
+    website: https://www.meadowood.com/
+
+  - id: seed/auberge-du-soleil
+    name: Auberge du Soleil
+    type: lodge
+    lat: 38.50970
+    lon: -122.41490
+    city: Rutherford
+    state: CA
+    address: 180 Rutherford Hill Rd, Rutherford, CA 94573
+    priceRange: $$$$
+    description: Hillside Mediterranean-style resort overlooking Napa Valley.
+    website: https://www.aubergeresorts.com/aubergedusoleil/
+
+  - id: seed/silverado-resort
+    name: Silverado Resort and Spa
+    type: lodge
+    lat: 38.32550
+    lon: -122.26230
+    city: Napa
+    state: CA
+    address: 1600 Atlas Peak Rd, Napa, CA 94558
+    priceRange: $$$
+    description: 1,200-acre estate at the base of Atlas Peak with golf and trails.
+    website: https://www.silveradoresort.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

@@ -1,0 +1,69 @@
+slug: tuolumne
+name: Tuolumne County, CA (Yosemite N / Hwy 120)
+# Tuolumne County — north Yosemite, Tuolumne Meadows, Hwy 120 corridor.
+bbox: [-120.40, 37.70, -119.20, 38.50]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/tuolumne-meadows-lodge
+    name: Tuolumne Meadows Lodge
+    type: lodge
+    lat: 37.87410
+    lon: -119.34320
+    city: Yosemite NP
+    state: CA
+    address: Tioga Pass Rd, Tuolumne Meadows, CA 95389
+    priceRange: $$
+    description: Tent cabins in Yosemite's high country at 8,600 ft.
+    website: https://www.travelyosemite.com/lodging/tuolumne-meadows-lodge/
+
+  - id: seed/white-wolf
+    name: White Wolf Lodge
+    type: lodge
+    lat: 37.85440
+    lon: -119.64470
+    city: Yosemite NP
+    state: CA
+    address: White Wolf Rd, Yosemite NP, CA 95389
+    priceRange: $$
+    description: High-country tent cabins near Hwy 120, gateway to backcountry trails.
+    website: https://www.travelyosemite.com/lodging/white-wolf-lodge/
+
+  - id: seed/evergreen-lodge
+    name: Evergreen Lodge
+    type: lodge
+    lat: 37.85730
+    lon: -119.94680
+    city: Groveland
+    state: CA
+    address: 33160 Evergreen Rd, Groveland, CA 95321
+    priceRange: $$$
+    description: Historic 1921 cabin resort near Hetch Hetchy, on the Yosemite border.
+    website: https://www.evergreenlodge.com/
+
+  - id: seed/rush-creek-lodge
+    name: Rush Creek Lodge
+    type: lodge
+    lat: 37.81480
+    lon: -119.87860
+    city: Groveland
+    state: CA
+    address: 34001 Hwy 120, Groveland, CA 95321
+    priceRange: $$$
+    description: Modern mountain lodge at Yosemite's western gateway.
+    website: https://www.rushcreeklodge.com/
+
+  - id: seed/groveland-hotel
+    name: The Groveland Hotel
+    type: hotel
+    lat: 37.83770
+    lon: -120.23280
+    city: Groveland
+    state: CA
+    address: 18767 Main St, Groveland, CA 95321
+    priceRange: $$
+    description: 1849 Gold Rush-era hotel on the way to Yosemite.
+    website: https://www.groveland.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

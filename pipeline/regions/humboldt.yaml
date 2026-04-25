@@ -1,0 +1,56 @@
+slug: humboldt
+name: Humboldt County, CA
+bbox: [-124.50, 40.00, -123.30, 41.50]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/benbow-historic-inn
+    name: Benbow Historic Inn
+    type: inn
+    lat: 40.07050
+    lon: -123.79110
+    city: Garberville
+    state: CA
+    address: 445 Lake Benbow Dr, Garberville, CA 95542
+    priceRange: $$$
+    description: 1926 Tudor-style inn on the Eel River, gateway to the Avenue of the Giants.
+    website: https://benbowinn.com/
+
+  - id: seed/miranda-gardens
+    name: Miranda Gardens Resort
+    type: cabin
+    lat: 40.24180
+    lon: -123.82430
+    city: Miranda
+    state: CA
+    address: 6766 Avenue of the Giants, Miranda, CA 95553
+    priceRange: $$
+    description: 1930s redwood cottages along the Avenue of the Giants.
+    website: https://www.mirandagardens.com/
+
+  - id: seed/redwood-coast-cabins
+    name: Redwood Coast Cabins
+    type: cabin
+    lat: 40.78360
+    lon: -124.06300
+    city: Eureka
+    state: CA
+    address: 1660 7th St, Arcata, CA 95521
+    priceRange: $$
+    description: Redwood-cabin retreat in Arcata, gateway to Redwood National Park.
+    website: https://www.redwoodcoastcabins.com/
+
+  - id: seed/lost-coast-camp
+    name: Shelter Cove Lighthouse Inn
+    type: inn
+    lat: 40.02710
+    lon: -124.06010
+    city: Shelter Cove
+    state: CA
+    address: 10 Seal Ct, Shelter Cove, CA 95589
+    priceRange: $$
+    description: Inn at the gateway to the Lost Coast Trail.
+    website: https://sheltercovelighthouseinn.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

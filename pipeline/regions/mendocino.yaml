@@ -1,0 +1,56 @@
+slug: mendocino
+name: Mendocino County, CA
+bbox: [-124.10, 38.75, -122.85, 40.15]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/heritage-house-resort
+    name: Heritage House Resort & Spa
+    type: lodge
+    lat: 39.27520
+    lon: -123.78420
+    city: Little River
+    state: CA
+    address: 5200 N Hwy 1, Little River, CA 95456
+    priceRange: $$$$
+    description: Cliffside cottages on the Mendocino coast.
+    website: https://www.heritagehouseresort.com/
+
+  - id: seed/stanford-inn
+    name: The Stanford Inn by the Sea
+    type: lodge
+    lat: 39.30070
+    lon: -123.78940
+    city: Mendocino
+    state: CA
+    address: Coast Hwy 1 & Comptche-Ukiah Rd, Mendocino, CA 95460
+    priceRange: $$$
+    description: Eco-resort with on-site farm and trails to the Big River estuary.
+    website: https://www.stanfordinn.com/
+
+  - id: seed/boonville-hotel
+    name: The Boonville Hotel
+    type: hotel
+    lat: 39.00890
+    lon: -123.36570
+    city: Boonville
+    state: CA
+    address: 14050 Hwy 128, Boonville, CA 95415
+    priceRange: $$$
+    description: Restored 1860s hotel in Anderson Valley wine country.
+    website: https://boonvillehotel.com/
+
+  - id: seed/north-coast-country-inn
+    name: North Coast Country Inn
+    type: inn
+    lat: 38.86440
+    lon: -123.66670
+    city: Gualala
+    state: CA
+    address: 34591 S Hwy 1, Gualala, CA 95445
+    priceRange: $$$
+    description: Coastal inn with cottages overlooking the rugged Mendonoma coast.
+    website: https://northcoastcountryinn.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

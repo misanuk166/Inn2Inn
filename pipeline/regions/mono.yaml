@@ -1,0 +1,69 @@
+slug: mono
+name: Mono County, CA (Eastern Sierra)
+# Mono County — Mammoth Lakes, June Lake, Bridgeport, Bodie.
+bbox: [-119.65, 37.40, -118.45, 38.55]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/tamarack-lodge
+    name: Tamarack Lodge
+    type: cabin
+    lat: 37.61500
+    lon: -119.00440
+    city: Mammoth Lakes
+    state: CA
+    address: 163 Twin Lakes Rd, Mammoth Lakes, CA 93546
+    priceRange: $$$
+    description: Historic 1924 lakeside cabins near Mammoth Mountain trails.
+    website: https://www.tamaracklodge.com/
+
+  - id: seed/westin-monache
+    name: The Westin Monache Resort, Mammoth
+    type: hotel
+    lat: 37.65060
+    lon: -118.97180
+    city: Mammoth Lakes
+    state: CA
+    address: 50 Hillside Dr, Mammoth Lakes, CA 93546
+    priceRange: $$$$
+    description: Slope-side hotel at the Village at Mammoth.
+    website: https://www.marriott.com/en-us/hotels/mmhwi-the-westin-monache-resort-mammoth/
+
+  - id: seed/convict-lake-resort
+    name: Convict Lake Resort
+    type: cabin
+    lat: 37.59140
+    lon: -118.85530
+    city: Mammoth Lakes
+    state: CA
+    address: 2000 Convict Lake Rd, Mammoth Lakes, CA 93546
+    priceRange: $$$
+    description: Cabin resort on Convict Lake at 7,580 ft, trailhead for the John Muir Wilderness.
+    website: https://www.convictlake.com/
+
+  - id: seed/double-eagle-resort
+    name: Double Eagle Resort & Spa
+    type: lodge
+    lat: 37.78440
+    lon: -119.07520
+    city: June Lake
+    state: CA
+    address: 5587 Hwy 158, June Lake, CA 93529
+    priceRange: $$$
+    description: Cabin resort on Reversed Creek with views of Carson Peak.
+    website: https://www.doubleeagle.com/
+
+  - id: seed/silver-lake-resort
+    name: Silver Lake Resort
+    type: cabin
+    lat: 37.78040
+    lon: -119.13130
+    city: June Lake
+    state: CA
+    address: 6957 Hwy 158, June Lake, CA 93529
+    priceRange: $$
+    description: Cabins on Silver Lake along the June Lake Loop.
+    website: https://www.silverlakeresort.net/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

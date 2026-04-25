@@ -1,0 +1,44 @@
+slug: san-mateo
+name: San Mateo County, CA
+bbox: [-122.55, 37.10, -122.05, 37.70]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/costanoa
+    name: Costanoa Lodge
+    type: lodge
+    lat: 37.21680
+    lon: -122.42280
+    city: Pescadero
+    state: CA
+    address: 2001 Rossi Rd, Pescadero, CA 94060
+    priceRange: $$$
+    description: Coastal lodge with cabins and tent bungalows on the San Mateo coast.
+    website: https://costanoa.com/
+
+  - id: seed/pigeon-point-hostel
+    name: HI Pigeon Point Lighthouse Hostel
+    type: hostel
+    lat: 37.18230
+    lon: -122.39410
+    city: Pescadero
+    state: CA
+    address: 210 Pigeon Point Rd, Pescadero, CA 94060
+    priceRange: $
+    description: Hostel at the base of Pigeon Point Lighthouse.
+    website: https://www.hiusa.org/find-hostels/california/pescadero-94060
+
+  - id: seed/half-moon-bay-lodge
+    name: Half Moon Bay Lodge
+    type: lodge
+    lat: 37.43830
+    lon: -122.42090
+    city: Half Moon Bay
+    state: CA
+    address: 2400 S Cabrillo Hwy, Half Moon Bay, CA 94019
+    priceRange: $$$
+    description: Coastal lodge near Half Moon Bay's beaches and trails.
+    website: https://www.halfmoonbaylodge.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15

@@ -1,0 +1,69 @@
+slug: inyo
+name: Inyo County, CA (Bishop / Lone Pine)
+# Inyo County — Bishop, Big Pine, Independence, Lone Pine, west side of Death Valley.
+bbox: [-118.85, 36.10, -117.30, 38.05]
+osmExtractUrl: https://download.geofabrik.de/north-america/us/california-latest.osm.pbf
+
+seedLodging:
+  - id: seed/dow-villa
+    name: Dow Villa Motel
+    type: motel
+    lat: 36.60540
+    lon: -118.06000
+    city: Lone Pine
+    state: CA
+    address: 310 S Main St, Lone Pine, CA 93545
+    priceRange: $$
+    description: Historic 1923 motel + hotel — Hollywood Western base camp, Whitney Portal access.
+    website: https://www.dowvillamotel.com/
+
+  - id: seed/whitney-portal-hostel
+    name: Whitney Portal Hostel
+    type: hostel
+    lat: 36.60660
+    lon: -118.05880
+    city: Lone Pine
+    state: CA
+    address: 238 S Main St, Lone Pine, CA 93545
+    priceRange: $
+    description: Hiker hostel for Mt Whitney climbers.
+    website: https://www.whitneyportalhostel.com/
+
+  - id: seed/creekside-inn-bishop
+    name: Creekside Inn
+    type: hotel
+    lat: 37.36520
+    lon: -118.39730
+    city: Bishop
+    state: CA
+    address: 725 N Main St, Bishop, CA 93514
+    priceRange: $$
+    description: Independent inn along Bishop Creek, gateway to the John Muir Wilderness.
+    website: https://www.bishopcreeksideinn.com/
+
+  - id: seed/parchers-resort
+    name: Parchers Resort
+    type: cabin
+    lat: 37.16330
+    lon: -118.59440
+    city: Bishop
+    state: CA
+    address: 5001 South Lake Rd, Bishop, CA 93514
+    priceRange: $$
+    description: 1920s cabin resort at 9,250 ft on the road to South Lake trailhead.
+    website: https://www.parchersresort.net/
+
+  - id: seed/cardinal-village-resort
+    name: Cardinal Village Resort
+    type: cabin
+    lat: 37.27460
+    lon: -118.66760
+    city: Bishop
+    state: CA
+    address: 321 Cardinal Rd, Bishop, CA 93514
+    priceRange: $$
+    description: Historic mining-era cabin resort in Aspendell, gateway to Sabrina Basin.
+    website: https://www.cardinalvillageresort.com/
+
+filterMajorRoadMeters: 200
+maxRouteMiles: 15
