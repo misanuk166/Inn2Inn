@@ -196,7 +196,7 @@ test.describe("Explorer map", () => {
           const py = c.height / 2 + dy;
           if (px > c.width - 20 || py > c.height - 20) continue;
           const hits = m.queryRenderedFeatures([px, py], {
-            layers: ["explorer-hotels-layer"],
+            layers: ["explorer-hotels-layer", "explorer-routes-hit"],
           });
           if (hits.length === 0) {
             return { x: c.left + px, y: c.top + py };
