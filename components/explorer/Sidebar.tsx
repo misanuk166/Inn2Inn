@@ -19,7 +19,15 @@ const RATING_OPTIONS: RatingFilter[] = [
   "urban_only",
 ];
 
-export function Sidebar({ regions, regionSlug }: { regions: Region[]; regionSlug: string }) {
+export function Sidebar({
+  regions,
+  regionSlug,
+  widthPx,
+}: {
+  regions: Region[];
+  regionSlug: string;
+  widthPx: number;
+}) {
   const lodging = useExplorer((s) => s.lodging);
   const routes = useExplorer((s) => s.routes);
   const endpointHotelId = useExplorer((s) => s.endpointHotelId);
@@ -42,7 +50,10 @@ export function Sidebar({ regions, regionSlug }: { regions: Region[]; regionSlug
   const endpointHotel = endpointHotelId ? lodgingById.get(endpointHotelId) : null;
 
   return (
-    <aside className="flex h-full w-full max-w-md min-w-0 flex-col overflow-hidden border-r border-zinc-200 bg-white">
+    <aside
+      style={{ width: widthPx }}
+      className="flex h-full min-w-0 shrink-0 flex-col overflow-hidden border-r border-zinc-200 bg-white"
+    >
       <div className="flex min-w-0 flex-col gap-4 border-b border-zinc-200 p-4">
         <RegionPicker regions={regions} current={regionSlug} />
 

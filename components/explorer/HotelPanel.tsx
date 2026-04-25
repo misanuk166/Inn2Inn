@@ -6,7 +6,7 @@ import type { Route } from "@/lib/types";
 import { SCENIC_CATEGORY_COLOR, SCENIC_CATEGORY_LABEL } from "@/lib/types";
 import { useExplorer } from "./store";
 
-export function HotelPanel() {
+export function HotelPanel({ widthPx }: { widthPx: number }) {
   const selectedId = useExplorer((s) => s.selectedHotelId);
   const setSelected = useExplorer((s) => s.setSelectedHotel);
   const setEndpointHotel = useExplorer((s) => s.setEndpointHotel);
@@ -40,7 +40,10 @@ export function HotelPanel() {
   }
 
   return (
-    <aside className="flex h-full w-full max-w-md min-w-0 flex-col overflow-hidden border-l border-zinc-200 bg-white">
+    <aside
+      style={{ width: widthPx }}
+      className="flex h-full min-w-0 shrink-0 flex-col overflow-hidden border-l border-zinc-200 bg-white"
+    >
       {/* Header — photo or themed placeholder, with close button + name overlay */}
       <div className="relative shrink-0">
         <HotelPhoto hotel={hotel} />
