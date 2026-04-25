@@ -368,10 +368,15 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
     };
     const total = totalScore(sub);
     const cat = categorize(total);
-    await client.query(
-      `update routes set scenic_score = $2, sub_scores = $3, category = $4 where id = $1`,
-      [r.id, total, JSON.stringify(sub), cat]
-    );
+    try {
+      await client.query(
+        `update routes set scenic_score = $2, sub_scores = $3, category = $4 where id = $1`,
+        [r.id, total, JSON.stringify(sub), cat]
+      );
+    } catch (e) {
+      failed++;
+      log("scoring", `route ${r.id} update failed: ${(e as Error).message.slice(0, 100)}`);
+    }
     if (i % 25 === 0 || i === routes.length) {
       progress("scoring", i, routes.length, "scored");
     }
