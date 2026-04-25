@@ -42,8 +42,8 @@ export function Sidebar({ regions, regionSlug }: { regions: Region[]; regionSlug
   const endpointHotel = endpointHotelId ? lodgingById.get(endpointHotelId) : null;
 
   return (
-    <aside className="flex h-full w-full max-w-md flex-col border-r border-zinc-200 bg-white">
-      <div className="flex flex-col gap-4 border-b border-zinc-200 p-4">
+    <aside className="flex h-full w-full max-w-md min-w-0 flex-col overflow-hidden border-r border-zinc-200 bg-white">
+      <div className="flex min-w-0 flex-col gap-4 border-b border-zinc-200 p-4">
         <RegionPicker regions={regions} current={regionSlug} />
 
         {/* Endpoint hotel filter */}
@@ -51,11 +51,11 @@ export function Sidebar({ regions, regionSlug }: { regions: Region[]; regionSlug
           <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-500">
             Hotel filter
           </label>
-          <div className="flex gap-2">
+          <div className="flex min-w-0 gap-2">
             <select
               value={endpointHotelId ?? ""}
               onChange={(e) => setEndpointHotel(e.target.value || null)}
-              className="flex-1 rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm"
+              className="min-w-0 flex-1 truncate rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm"
             >
               <option value="">Any hotel</option>
               {lodging
@@ -71,7 +71,7 @@ export function Sidebar({ regions, regionSlug }: { regions: Region[]; regionSlug
               type="button"
               disabled={!endpointHotel}
               onClick={toggleDirection}
-              className="rounded-md border border-zinc-300 px-2 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="shrink-0 whitespace-nowrap rounded-md border border-zinc-300 px-2 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
               title="Toggle whether this hotel is the departure or arrival point"
             >
               {endpointDirection === "depart" ? "Departing" : "Arriving"}
