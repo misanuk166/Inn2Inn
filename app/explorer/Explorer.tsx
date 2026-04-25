@@ -19,6 +19,7 @@ export function Explorer({
   routes: Route[];
 }) {
   const setData = useExplorer((s) => s.setData);
+  const selectedHotelId = useExplorer((s) => s.selectedHotelId);
 
   useEffect(() => {
     setData(lodging, routes);
@@ -29,8 +30,8 @@ export function Explorer({
       <Sidebar regions={regions} regionSlug={region.slug} />
       <div className="relative min-h-0 flex-1">
         <ExplorerMap initialBbox={region.bbox} />
-        <HotelPanel />
       </div>
+      {selectedHotelId && <HotelPanel />}
     </div>
   );
 }
