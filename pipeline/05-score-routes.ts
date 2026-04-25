@@ -46,11 +46,14 @@ const MAJOR_HIGHWAYS = new Set([
   "tertiary",
 ]);
 
-const SCRATCH_HIGHWAYS = "_pipeline_scratch_highways";
-const SCRATCH_NATURAL = "_pipeline_scratch_natural";
-const SCRATCH_WATER = "_pipeline_scratch_water";
-
 export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
+  // Scratch tables are namespaced per region so that two concurrent pipeline
+  // runs (e.g. one finishing an earlier failure while a batch moves on to the
+  // next county) don't trample each other's data.
+  const slugSafe = cfg.slug.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+  const SCRATCH_HIGHWAYS = `_pipeline_scratch_highways_${slugSafe}`;
+  const SCRATCH_NATURAL = `_pipeline_scratch_natural_${slugSafe}`;
+  const SCRATCH_WATER = `_pipeline_scratch_water_${slugSafe}`;
   const client = pgPool();
 
   log("scoring", "fetching OSM feature corridors via Overpass...");
@@ -383,9 +386,9 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
   }
 
   // Drop scratch tables — they're regenerated each run.
-  await client.query(`drop table ${SCRATCH_HIGHWAYS}`);
-  await client.query(`drop table ${SCRATCH_NATURAL}`);
-  await client.query(`drop table ${SCRATCH_WATER}`);
+  await client.query(`drop table if exists ${SCRATCH_HIGHWAYS}`);
+  await client.query(`drop table if exists ${SCRATCH_NATURAL}`);
+  await client.query(`drop table if exists ${SCRATCH_WATER}`);
   log("scoring", `done (${failed} route(s) failed spatial join — scored as 0)`);
 }
 
