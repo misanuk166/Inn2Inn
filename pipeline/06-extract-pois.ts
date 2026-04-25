@@ -16,7 +16,13 @@ const BUFFER_METERS = 200;
 
 export async function extractPois(cfg: RegionConfig): Promise<void> {
   const client = pgPool();
-  const concurrency = Number(process.env.PIPELINE_CONCURRENCY ?? 10);
+  // POIs do nested queries (find routes near a POI, then 1 insert per
+  // matched route), each acquiring a pg connection in turn. At
+  // PIPELINE_CONCURRENCY=20 the peak in-flight count exceeds Supabase's
+  // session-pooler default of 15 and the run dies with EMAXCONNSESSION.
+  // Cap the POI step at 8 regardless — still 8x faster than serial and
+  // safely under the pool ceiling.
+  const concurrency = Math.min(8, Number(process.env.PIPELINE_CONCURRENCY ?? 10));
   const limit = pLimit(concurrency);
 
   log("pois", "fetching POIs via Overpass...");
