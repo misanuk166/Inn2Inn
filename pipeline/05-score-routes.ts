@@ -16,7 +16,6 @@ import {
   scoreElevation,
   scoreWater,
   scoreSurface,
-  scoreDistance,
   totalScore,
   categorize,
 } from "../lib/scoring";
@@ -29,15 +28,26 @@ const NATURAL_LANDUSE = new Set(["forest", "meadow", "grass", "recreation_ground
 const NATURAL_NATURAL = new Set(["wood", "water", "scrub", "heath", "grassland"]);
 const NATURAL_LEISURE = new Set(["park", "nature_reserve", "golf_course"]);
 const NATURAL_BOUNDARY = new Set(["protected_area", "national_park"]);
-const TRAIL_HIGHWAYS = new Set(["path", "track", "footway", "bridleway", "steps"]);
+// Trail-quality (counts at 1.0 in surface scoring): purpose-built for
+// non-vehicular travel. Bike paths and dedicated pedestrian zones belong
+// here for inn-to-inn purposes — they're traffic-free walkable corridors.
+const TRAIL_HIGHWAYS = new Set([
+  "path",
+  "track",
+  "footway",
+  "bridleway",
+  "steps",
+  "cycleway",
+  "pedestrian",
+]);
+// Minor (counts at 0.5): roads with cars but generally low traffic.
 const MINOR_HIGHWAYS = new Set([
   "service",
   "residential",
   "unclassified",
   "living_street",
-  "pedestrian",
-  "cycleway",
 ]);
+// Major (counts at 0.0 + naturalness penalty): high-traffic roads.
 const MAJOR_HIGHWAYS = new Set([
   "motorway",
   "trunk",
@@ -367,7 +377,7 @@ export async function scoreRoutes(cfg: RegionConfig): Promise<void> {
         fractionMinor: clamp01(Number(f.f_minor)),
         fractionMajor: clamp01(Number(f.f_major)),
       }),
-      distance: scoreDistance({ distanceMi: Number(r.distance_mi) }),
+      distance: 0, // retired sub-score; kept on the row for schema compat
     };
     const total = totalScore(sub);
     const cat = categorize(total);

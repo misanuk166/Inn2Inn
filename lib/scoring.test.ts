@@ -25,16 +25,40 @@ describe("categorize", () => {
 });
 
 describe("totalScore", () => {
-  it("clamps each sub-score to 0..20 then sums", () => {
+  it("weights surface 1.75 and naturalness 1.25, ignores distance", () => {
     expect(
       totalScore({
-        naturalness: 25, // clamped to 20
-        elevation: -5,   // clamped to 0
-        water: 10,
-        surface: 15,
-        distance: 20,
+        naturalness: 20, // → 25
+        elevation: 20,   // → 20
+        water: 20,       // → 20
+        surface: 20,     // → 35
+        distance: 20,    // → 0 (retired)
+      })
+    ).toBe(100);
+  });
+
+  it("100% road route caps at 65 (Scenic at best, never Highly Scenic)", () => {
+    expect(
+      totalScore({
+        naturalness: 20,
+        elevation: 20,
+        water: 20,
+        surface: 0,
+        distance: 0,
       })
     ).toBe(65);
+  });
+
+  it("clamps each sub-score to 0..20", () => {
+    expect(
+      totalScore({
+        naturalness: 25, // clamped to 20 → ×1.25 = 25
+        elevation: -5,   // clamped to 0
+        water: 10,
+        surface: 15,     // ×1.75 = 26.25
+        distance: 20,    // ignored
+      })
+    ).toBe(61);
   });
 });
 
@@ -66,12 +90,10 @@ describe("sub-scores: edge cases", () => {
     ).toBe(10);
   });
 
-  it("distance: peaked at 7 mi, near-zero below 1 mi and above 14 mi", () => {
-    const peak = scoreDistance({ distanceMi: 7 });
-    expect(peak).toBeCloseTo(20, 0);
-    expect(scoreDistance({ distanceMi: 0 })).toBe(0);
-    expect(scoreDistance({ distanceMi: 1 })).toBeLessThan(scoreDistance({ distanceMi: 4 }));
-    expect(scoreDistance({ distanceMi: 14 })).toBeLessThan(scoreDistance({ distanceMi: 9 }));
+  // scoreDistance is retired (always returns 0) but kept around for backwards
+  // compat with existing route rows; not asserting a specific behavior.
+  it("distance: still callable, returns ≤ 20", () => {
+    expect(scoreDistance({ distanceMi: 7 })).toBeLessThanOrEqual(20);
   });
 });
 

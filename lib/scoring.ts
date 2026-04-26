@@ -1,13 +1,35 @@
 import type { LineString } from "geojson";
 import type { ScenicCategory, ScenicSubScores } from "./types";
 
-// Each sub-score is 0..20. The total scenic score is their sum (0..100).
-// Category boundaries (per spec): >=72 highly, 52-71 scenic, 32-51 moderate, <32 urban.
+// Each sub-score function still returns a value in 0..20 (so the existing
+// per-axis bars in the UI render at a comparable scale). The total scenic
+// score weights them so trail-vs-road quality dominates:
+//
+//   surface     × 1.75 → contributes up to 35 / 100
+//   naturalness × 1.25 → contributes up to 25 / 100
+//   elevation   × 1.00 → contributes up to 20 / 100
+//   water       × 1.00 → contributes up to 20 / 100
+//   distance            → no longer counted (was a sweet-spot bias toward
+//                         mid-length routes; removed at user's request)
+//
+// A route that's 100% on roads now caps at 25 + 20 + 20 = 65 — explicitly
+// "Scenic" or below, never "Highly Scenic," no matter how dramatic the
+// terrain or how close to water.
+//
+// Category boundaries unchanged: >=72 highly, 52-71 scenic, 32-51 moderate, <32 urban.
 
 export const SCENIC_THRESHOLDS = {
   HIGHLY: 72,
   SCENIC: 52,
   MODERATE: 32,
+} as const;
+
+const SUBSCORE_WEIGHTS = {
+  surface: 1.75,
+  naturalness: 1.25,
+  elevation: 1.0,
+  water: 1.0,
+  distance: 0, // retired
 } as const;
 
 export function categorize(score: number): ScenicCategory {
@@ -19,11 +41,11 @@ export function categorize(score: number): ScenicCategory {
 
 export function totalScore(s: ScenicSubScores): number {
   return Math.round(
-    clamp020(s.naturalness) +
-      clamp020(s.elevation) +
-      clamp020(s.water) +
-      clamp020(s.surface) +
-      clamp020(s.distance)
+    clamp020(s.surface) * SUBSCORE_WEIGHTS.surface +
+      clamp020(s.naturalness) * SUBSCORE_WEIGHTS.naturalness +
+      clamp020(s.elevation) * SUBSCORE_WEIGHTS.elevation +
+      clamp020(s.water) * SUBSCORE_WEIGHTS.water
+    // distance ignored — see comment above.
   );
 }
 
